@@ -105,9 +105,9 @@ class Client:
             return False
 
     # Выборка моделей из БД с фильтрацией (ORM)
-    async def select_model(self, model: Type, *filters: Any, fetch_one: bool = False, filter_by: Optional[Dict[str, Any]] = None) -> Union[List[Any], Any, None]:
+    async def select_model(self, model: Type, *filters: Any, fetch_one: bool = True, filter_by: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]] | Dict[str, Any]:
         if not await self.is_connected():
-            return None if fetch_one else []
+            return {} if fetch_one else []
 
         try:
             async with self.async_session() as session:
@@ -117,16 +117,35 @@ class Client:
                 # Получение записи на основе фильтров
                 result = await session.execute(stmt)
                 items = result.scalars()
-                return items.first() if fetch_one else items.all()
+
+                if fetch_one:
+                    instance = items.first()
+                    if instance is None:
+                        return {} if fetch_one else []
+                    
+                    return {
+                        k: v for k, v in vars(instance).items()
+                        if not k.startswith("_")
+                    }
+                else:
+                    instances = items.all()
+                    # Преобразуем каждую запись в словарь
+                    return [
+                        {
+                            k: v for k, v in vars(inst).items()
+                            if not k.startswith("_")
+                        }
+                        for inst in instances
+                    ]
         except Exception as e:
             await self.handle_error(e)
-            return None if fetch_one else []
+            return {} if fetch_one else []
 
     # Вставка записи по переданным полям
-    async def insert_model(self, model: Type, data: dict) -> Dict[str, Any] | None:
+    async def insert_model(self, model: Type, data: dict) -> Dict[str, Any]:
         # Если Бд - не подключена
         if not await self.is_connected():
-            return None
+            return {}
 
         try:
             async with self.async_session() as session:
@@ -142,44 +161,12 @@ class Client:
                 }
         except Exception as e:
             await self.handle_error(e)
-            return None
-
-    # Обновление записи по фильтру и новым данным
-    async def update_record(self, model: Type, *filters: Any, new_data: Dict[str, Any], filter_by: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | None:
-        if not await self.is_connected():
-            return None
-        try:
-            async with self.async_session() as session:
-                # Генерация фильтров
-                stmt = await self.add_filters(model, *filters, filter_by=filter_by)
-
-                # Получение записи на основе фильтров
-                result = await session.execute(stmt)
-                instance = result.scalar_one_or_none()
-
-                if not instance:
-                    return None
-
-                # Обновляем запись
-                for key, value in new_data.items():
-                    setattr(instance, key, value)
-
-                await session.commit()
-                await session.refresh(instance)  # Обновляем данные из БД
-
-                # Преобразуем ORM объект в словарь, исключая служебные атрибуты
-                return {
-                    k: v for k, v in vars(instance).items()
-                    if not k.startswith("_")
-                }
-        except Exception as e:
-            await self.handle_error(e)
-            return None
+            return {}
 
     # Функция частичного обновления записи
-    async def update_record_partition(self, model: Type, *filters: Any, new_data: Dict[str, Any], filter_by: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | None:
+    async def update_record_partition(self, model: Type, *filters: Any, new_data: Dict[str, Any], filter_by: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         if not await self.is_connected():
-            return None
+            return {}
 
         try:
             async with self.async_session() as session:
@@ -191,7 +178,7 @@ class Client:
                 instance = result.scalar_one_or_none()
 
                 if not instance:
-                    return None
+                    return {}
 
                 # Обновляем только существующие атрибуты модели
                 for key, value in new_data.items():
@@ -210,12 +197,12 @@ class Client:
 
         except Exception as e:
             await self.handle_error(e)
-            return None
+            return {}
 
     # Удаление записи по фильтрам
-    async def delete_record(self, model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None) -> Dict[str, Any] | None:
+    async def delete_record(self, model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         if not await self.is_connected():
-            return None
+            return {}
 
         try:
             async with self.async_session() as session:
@@ -228,7 +215,8 @@ class Client:
 
                 # Проверка существования записи + Удаление записи
                 if not instance:
-                    return None
+                    return {}
+                
                 await session.delete(instance)
                 await session.commit()
 
@@ -239,10 +227,10 @@ class Client:
                 }
         except Exception as e:
             await self.handle_error(e)
-            return None
+            return {}
 
     # Выполнение произвольного SQL-запроса
-    async def manual_execute(self, query: str, params: Optional[Union[Dict[str, Any], tuple]] = None, fetch_one: bool = False) -> Union[List[Dict[str, Any]], Dict[str, Any], None]:
+    async def manual_execute(self, query: str, params: Optional[Union[Dict[str, Any], tuple]] = None, fetch_one: bool = False) -> List[Dict[str, Any]] | Dict[str, Any]:
         if not await self.is_connected():
             return []
 
@@ -254,18 +242,19 @@ class Client:
                 rows = [dict(zip(keys, row)) for row in result]
 
                 # Возвращаем либо одну запись, либо все
-                return rows[0] if fetch_one and rows else (rows if rows else None)
+                return (rows[0] if rows else {}) if fetch_one else (rows if rows else [])
         except Exception as e:
             await self.handle_error(e)
             return []
 
     # Обработка и вывод ошибок
-    async def handle_error(self, error: Exception) -> None:
+    @staticmethod
+    async def handle_error(error: Exception) -> None:
         print(error)
 
     # Применение фильтров
     @staticmethod
-    async def add_filters(model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None):
+    async def add_filters(model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None) -> None:
         stmt = select(model)
 
         if filters is not None:
@@ -273,8 +262,4 @@ class Client:
         elif filter_by is not None:
             stmt = stmt.filter_by(**filter_by)
 
-        return stmt
-
-
-if __name__ == "__main__":
-    print("HELLO")
+        return stmt # type: ignore
