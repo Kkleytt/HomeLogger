@@ -1,13 +1,5 @@
-# Класс для работы с PostgreSQL базами данных, ориентированный на использование совместно в логгером
-# Класс должен иметь следующие возможности:
-# 1) Проверка соединения, подключение, отключение, инициализация
-# 2) Работа с моделями: создание таблицы, получение данных, добавление данных, удаление данных, изменение данных
-# 3) Работа с фильтрацией: добавление фильтров к запросам завязанных на моделях
-# #   4) Ручные запросы, исключительно SQL запрос и переменные для него
-# Также класс должен быть устойчивым, быстрым и стабильным, работать асинхронно и использовать SqlAlchemy, жесткую типизацию и оптимизацию всех процессов
-# Сложность     - 6/10
-# Начало работ  - 01.10.2025
-# Дедлайн       - 10.10.2025 (9 дней)
+# postgres_client.py
+# Модуль для работы с PostgreSQL / TimeScaleDB
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Type, Union
@@ -17,6 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
+
+from pydantic import ValidationError
 
 
 class Client:
@@ -39,6 +33,16 @@ class Client:
 
     # Добавление таймера на переподключение
     async def add_timer_reconnect(self, interval: int = 30, state: bool = False) -> bool:
+        """ Функция для добавления таймера на переподключение к базе данных
+
+        Keyword Arguments:
+            interval {int} -- Интервал таймера в минутах (default: {30})
+            state {bool} -- Статус таймера (default: {False})
+
+        Returns:
+            bool -- Статуса добавления таймера
+        """
+        
         if state:
             self._reconnect_interval = timedelta(minutes=interval)
             self._reconnect_state = True
@@ -49,6 +53,12 @@ class Client:
     
     # Получение настроек клиента
     async def get_settings(self) -> Dict[str, Any]:
+        """Функция для получения настроек клиента
+
+        Returns:
+            Dict[str, Any] -- Словарь с настройками клиента
+        """
+        
         return {
             "connect": {
                 "state": self.connected,
@@ -69,6 +79,12 @@ class Client:
     
     # Подключение к СУБД
     async def connect(self) -> bool:
+        """ Функция для подключения к СУБД
+
+        Returns:
+            bool -- Статус подключения
+        """
+        
         try:
 
             # Преобразование пароля
@@ -97,6 +113,12 @@ class Client:
 
     # Отключение от БД
     async def disconnect(self) -> bool:
+        """ Функция для отключения от БД
+
+        Returns:
+            bool -- Статус отключения
+        """
+        
         try:
             # Проверка активного соединения
             if self.connected:
@@ -118,6 +140,12 @@ class Client:
 
     # Проверка подключения или переподключение при истечении таймера
     async def connect_state(self) -> bool:
+        """ Функция для проверки подключения к БД
+
+        Returns:
+            bool -- Статус подключения
+        """
+        
         if not self.connected:
             await self.connect()
         
@@ -128,6 +156,15 @@ class Client:
 
     # Создание таблицы модели, если она ещё не существует
     async def create_table_if_not_exists(self, model: Type) -> bool:
+        """ Функция для создания таблицы в БД, если она ещё не существует
+
+        Arguments:
+            model {Type} -- Модель для создания таблицы SqlAlchemy
+
+        Returns:
+            bool -- Статус создания таблицы
+        """
+        
         if not await self.connect_state():
             return False
         try:
@@ -140,6 +177,20 @@ class Client:
 
     # Выборка моделей из БД с фильтрацией (ORM)
     async def select_model(self, model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None, fetch_many: bool = False) -> Optional[Any] | List[Any] | None:
+        """ Функция для выборки моделей из БД с фильтрацией
+
+        Arguments:
+            model {Type} -- Модель для выборки SqlAlchemy
+
+        Keyword Arguments:
+            filters {Any} -- Фильтры для выборки (default: {None})
+            filter_by {Optional[Dict[str, Any]]} -- Фильтры для выборки по полям (default: {None})
+            fetch_many {bool} -- Флаг для выборки одной или всех записей (default: {False})
+
+        Returns:
+            Optional[Any] | List[Any] | None -- Модель | Список моделей или None (если не нашлось данных или возникла ошибка)
+        """
+        
         if not await self.connect_state():
             return None
 
@@ -158,8 +209,20 @@ class Client:
             return None
 
     # Вставка записи по переданным полям
-    async def insert_model(self, model: Type, data: List[dict], fetch_many: bool = False) -> Optional[Any] | List[Any]:
-        # Если Бд - не подключена
+    async def insert_model(self, model: Type, data: List[dict], fetch_many: bool = False) -> Optional[Any] | List[Any] | None:
+        """ Функция для вставки записи в БД
+
+        Arguments:
+            model {Type} -- Модель для вставки SqlAlchemy
+            data {List[dict]} -- Список словарей с данными для вставки
+
+        Keyword Arguments:
+            fetch_many {bool} -- Флаг для выборки одной или всех записей (default: {False})
+
+        Returns:
+            Optional[Any] | List[Any] | None -- Модель | Список моделей или None (если не произошла запись или возникла ошибка)
+        """
+        
         if not await self.connect_state():
             return None
 
@@ -186,6 +249,20 @@ class Client:
 
     # Функция частичного обновления записи
     async def update_record_partition(self, model: Type, *filters: Any, new_data: Dict[str, Any], filter_by: Optional[Dict[str, Any]] = None, fetch_many: bool = False) -> Optional[Any] | List[Any] | None:
+        """ Функция для частичного обновления записи в БД
+
+        Arguments:
+            model {Type} -- Модель для обновления SqlAlchemy
+            new_data {Dict[str, Any]} -- Новые данные для обновления
+
+        Keyword Arguments:
+            filter_by {Optional[Dict[str, Any]]} -- Фильтры для выборки по полям (default: {None})
+            fetch_many {bool} -- Флаг для выборки одной или всех записей (default: {False})
+
+        Returns:
+            Optional[Any] | List[Any] | None -- Модель | Список моделей или None (если не произошло обновление записи или возникла ошибка)
+        """
+        
         if not await self.connect_state():
             return None
 
@@ -231,6 +308,19 @@ class Client:
         
     # Удаление записи по фильтрам
     async def delete_record(self, model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None, fetch_many: bool = False) -> Optional[Any] | List[Any] | None:
+        """ Функция для удаления записи из БД
+
+        Arguments:
+            model {Type} -- Модель для удаления SqlAlchemy
+
+        Keyword Arguments:
+            filter_by {Optional[Dict[str, Any]]} -- Фильтры для выборки по полям (default: {None})
+            fetch_many {bool} -- Флаг для выборки одной или всех записей (default: {False})
+
+        Returns:
+            Optional[Any] | List[Any] | None -- Модель | Список моделей или None (если не произошло удаление записи или возникла ошибка)
+        """
+        
         if not await self.connect_state():
             return None
 
@@ -270,6 +360,20 @@ class Client:
         
     # Выполнение произвольного SQL-запроса
     async def manual_execute(self, query: str, params: Optional[Union[Dict[str, Any], tuple]] = None, response: bool = True, fetch_many: bool = False) -> List[Dict[str, Any]] | Dict[str, Any] | None:
+        """ Функция для выполнения произвольного SQL-запроса
+
+        Arguments:
+            query {str} -- SQL-запрос
+
+        Keyword Arguments:
+            params {Optional[Union[Dict[str, Any], tuple]]} -- Параметры запроса (default: {None})
+            response {bool} -- Ожидание ответа от БД (default: {True})
+            fetch_many {bool} -- Флаг для выборки одной или всех записей (default: {False})
+
+        Returns:
+            List[Dict[str, Any]] | Dict[str, Any] | None -- Список словарей | Словарь | None (если произошла ошибка или запрос не вернул данных)
+        """
+        
         if not await self.connect_state():
             return None
 
@@ -298,11 +402,29 @@ class Client:
     # Обработка и вывод ошибок
     @staticmethod
     async def handle_error(error: Exception) -> None:
+        """ Обработка и вывод ошибок
+
+        Arguments:
+            error {Exception} -- Ошибка
+        """
+        
         print(error)
 
     # Применение фильтров
     @staticmethod
     async def add_filters(model: Type, *filters: Any, filter_by: Optional[Dict[str, Any]] = None) -> None:
+        """ Функция для применения фильтров
+
+        Arguments:
+            model {Type} -- Модель SqlAlchemy
+
+        Keyword Arguments:
+            filter_by {Optional[Dict[str, Any]]} -- Фильтрация по полям (default: {None})
+
+        Returns:
+            _type_ -- Возвращает объект запроса
+        """
+        
         stmt = select(model)
 
         # Объединяем два варианта фильтрации в одном условии
@@ -313,3 +435,25 @@ class Client:
                 stmt = stmt.filter_by(**filter_by)
 
         return stmt #type: ignore
+
+
+
+class LogClient(Client):
+    async def insert_log(self, model: Type, validation_model: Type, log: dict) -> Optional[Any] | None:
+        """ Функция для вставки лога в базу данных + валидация
+
+        Arguments:
+            model {Type} -- Модель SqlAlchemy
+            validation_model {Type} -- Модель Pydantic
+            log {dict} -- Словарь с данными лога
+
+        Returns:
+            Optional[Any] | None -- Данные записи в БД или None (если произошла ошибка)
+        """
+        
+        try:
+            valid_message = validation_model(**log)
+        except ValidationError as e:
+            return None
+        
+        return await self.insert_model(model=model, data=[log])

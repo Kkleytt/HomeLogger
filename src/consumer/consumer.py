@@ -1,6 +1,9 @@
-import asyncio  # Асинхронный запуск функций
-import json  # Работа с JSON строками
-import aio_pika
+# consumer.py
+# Модуль для получения данных из очереди RabbitMQ и перенаправления их в дочерние модули
+
+import asyncio                  # Асинхронный запуск функций
+import json                     # Работа с JSON строками
+import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
 
 # Параметры подключения
@@ -45,7 +48,7 @@ async def main():
     )
 
     # Подписываемся на callback рассылку
-    consume_tag = await logs_queue.consume(distribution_logs)
+    consume_tag = await logs_queue.consume(distribution_logs) # type: ignore
 
     # Бесконечный цикл проверки сообщений
     try:

@@ -1,10 +1,13 @@
+# connect_wiki.py
+# Модуль для подключения к базе данных и описанию функционала клиента
+
 import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, text
 
-from client import Client
+from databases.postgres_client import Client
 
 config = {
     "host": "46.160.250.162",

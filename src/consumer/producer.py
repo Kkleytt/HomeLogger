@@ -1,3 +1,6 @@
+# producer.py
+# Модуль для отправки сообщений в очередь RabbitMQ
+
 import asyncio
 import json
 import time

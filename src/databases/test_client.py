@@ -1,16 +1,18 @@
-import pytest # type: ignore
+# test_client.py
+# Модуль для тестирования клиента базы данных
+
+import pytest
 import asyncio
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import Column, Integer, String, text
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String
 
-from client import Client 
+from postgres_client import Client 
 
 
 config = {
-    "host": "46.160.250.162",
-    "port": 2251,
+    "host": "localhost",
+    "port": 2200,
     "username": "logger",
     "password": "logger",
     "database": "logger",
@@ -192,9 +194,7 @@ async def test_piska():
     assert result["name"] == "Fedora99" # type: ignore
     await client.disconnect()
     
-
     
- 
 if __name__ == "__main__":
     asyncio.run(test_piska())
     
