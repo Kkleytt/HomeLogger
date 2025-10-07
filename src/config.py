@@ -33,7 +33,7 @@ class Config:
             "database": os.getenv("TIMESCALEDB_DATABASE", "logger")
         }
 
-    def get_dict_config(self) -> dict:
+    def get_all_config(self) -> dict:
         """ Функция для получения полного словаря с конфигурациями
 
         Returns:
