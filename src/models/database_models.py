@@ -1,3 +1,6 @@
+# database_models.py
+# Модуль для генерации моделей базы данных
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, Index
 from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone

@@ -1,4 +1,4 @@
-# test_client.py
+# test_postgres_client.py
 # Модуль для тестирования клиента базы данных
 
 import pytest

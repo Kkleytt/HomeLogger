@@ -1,5 +1,5 @@
 # connect_wiki.py
-# Модуль для подключения к базе данных и описанию функционала клиента
+# Модуль с описанием как работать с базой данных
 
 import asyncio
 from sqlalchemy.orm import declarative_base

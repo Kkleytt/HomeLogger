@@ -37,7 +37,7 @@ class MessageValidate(BaseModel):
 
 
 # Функция для валидации данных
-def validate_message(data: dict) -> dict | None:
+async def validate_message(data: dict) -> dict | None:
     """ Функция для валидации данных взятых из очереди logs в RabbitMQ
 
     Arguments:
@@ -46,6 +46,7 @@ def validate_message(data: dict) -> dict | None:
     Returns:
         dict | None -- Данные или None
     """
+    
     try:
         valid_message = MessageValidate(**data)
         return valid_message.model_dump()

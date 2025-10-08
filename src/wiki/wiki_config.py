@@ -1,3 +1,6 @@
+# wiki_config.py
+# Модуль с описанием как работать с конфигурацией проекта
+
 from src.config import CurrentConfig as cfg
 
 def random_function(host, port, username, password, queue):

@@ -6,15 +6,8 @@ import json                     # Работа с JSON строками
 import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
 from src.config import CurrentConfig as cfg
+from src.consumer.message_validation import validate_message
 
-
-# Параметры подключения
-config = {
-    "host": "localhost",
-    "port": 2201,
-    "username": "logger",
-    "password": "logger",
-}
 
 
 async def generate_url(host: str, port: int, username: str, password: str) -> str | None:
@@ -24,18 +17,25 @@ async def generate_url(host: str, port: int, username: str, password: str) -> st
         return None
 
 
-# Логика обработки логов
+# Логика обработки сообщения
 async def distribution_message(message: aio_pika.IncomingMessage):
 
     # Читаем сообщение с автоматическим удалением после чтения
     async with message.process():
-
+        
         # Распаковка сообщения
         message = json.loads(message.body.decode())
-        
         print(message)
+        
+        # Валидация сообщения
+        result_validation = await validate_message(message) # type: ignore
+        if not result_validation:
+            raise Exception("Некорректные данные в сообщении!")
+
+        
 
 
+# Запуск наблюдателя
 async def run_consumer(host: str, port: int, username: str, password: str, queue: str):
     
     # Подключение к RabbitMq
@@ -65,12 +65,8 @@ async def run_consumer(host: str, port: int, username: str, password: str, queue
         await message_queue.cancel(consume_tag)
         await channel.close()
         await connection.close()
-
-
+        
+    
+# Пример использования    
 if __name__ == "__main__":
-    try:
-        asyncio.run(run_consumer(**cfg.rabbitmq))
-    except KeyboardInterrupt:
-        print("[!] Остановка по Ctrl+C")
-    except Exception as e:
-        print(f"[!] Ошибка при запуске consumer: {e}")
+    asyncio.run(run_consumer(**cfg.rabbitmq))
