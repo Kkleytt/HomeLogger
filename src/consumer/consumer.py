@@ -7,33 +7,37 @@ import aio_pika                 # Асинхронный движок для р�
 
 from src.config import CurrentConfig as cfg
 from src.consumer.message_validation import validate_message
+from src.modules.write_to_database import write_to_database
 
 
 
+
+# Генерация URL для подключения к RabbitMQ
 async def generate_url(host: str, port: int, username: str, password: str) -> str | None:
     if host and port and username and password:
         return f"amqp://{username}:{password}@{host}:{port}/"
     else:
         return None
 
-
 # Логика обработки сообщения
 async def distribution_message(message: aio_pika.IncomingMessage):
+
 
     # Читаем сообщение с автоматическим удалением после чтения
     async with message.process():
         
         # Распаковка сообщения
-        message = json.loads(message.body.decode())
+        message: dict = json.loads(message.body.decode())
         print(message)
         
         # Валидация сообщения
         result_validation = await validate_message(message) # type: ignore
         if not result_validation:
             raise Exception("Некорректные данные в сообщении!")
-
         
-
+        # Перенаправление сообщения в дочерние модули
+        await write_to_database(log_message=message)
+        #await LOG_DB.insert_log(model=generate_log_model(message['project']), log=message)
 
 # Запуск наблюдателя
 async def run_consumer(host: str, port: int, username: str, password: str, queue: str):

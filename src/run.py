@@ -18,5 +18,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("[!] Остановка по Ctrl+C")
+    except Exception as ex:
+        print(f"Ошибка: {ex}")
     finally:
         exit(0)

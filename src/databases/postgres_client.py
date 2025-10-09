@@ -10,8 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
-from pydantic import ValidationError
-
 
 class Client:
     def __init__(self, host: str, port: int, username: str, password: str, database: str) -> None:
@@ -439,7 +437,7 @@ class Client:
 
 
 class LogClient(Client):
-    async def insert_log(self, model: Type, log: dict) -> Optional[Any] | None:
+    async def insert_log(self, model: Type, log: dict) -> bool | int:
         """ Функция для вставки лога в базу данных + валидация
 
         Arguments:
@@ -450,4 +448,14 @@ class LogClient(Client):
             Optional[Any] | None -- Данные записи в БД или None (если произошла ошибка)
         """
         
-        return await self.insert_model(model=model, data=[log], fetch_many=False)
+        try:
+            await self.create_table_if_not_exists(model=model)
+            result = await self.insert_model(
+                model=model, 
+                data=[log], 
+                fetch_many=False
+                )
+            return int(result.id) # type: ignore
+        except Exception as e:
+            print(f"Ошибка при вставке лога: {e}")
+            return False

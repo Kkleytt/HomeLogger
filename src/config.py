@@ -25,6 +25,23 @@ class Config:
             "password": os.getenv("RABBITMQ_PASSWORD", "logger"),
             "queue": os.getenv("RABBITMQ_QUEUE", "logger")
         }
+        
+    @property
+    def logger(self):
+        return {
+            "project_name": os.getenv("LOGGER_PROJECT", "DefaultProject"),
+            
+            "print_to_console": os.getenv("LOGGER_PRINT_TO_CONSOLE", "True"),
+            "console_time_format": os.getenv("LOGGER_CONSOLE_TIME_FORMAT", "%Y-%m-%d %H:%M:%S"),
+            "console_time_zone": os.getenv("LOGGER_CONSOLE_TIME_ZONE", "Europe/London"),
+            
+            "send_to_server": os.getenv("LOGGER_SEND_TO_SERVER", "True"),
+            "host": os.getenv("LOGGER_HOST", "localhost"),
+            "port": int(os.getenv("LOGGER_PORT", "5672")),
+            "username": os.getenv("LOGGER_USERNAME", "logger"),
+            "password": os.getenv("LOGGER_PASSWORD", "logger"),
+            "queue": os.getenv("LOGGER_QUEUE", "logger")
+        }
 
     @property
     def timescaledb(self):
@@ -45,6 +62,7 @@ class Config:
         
         return {
             "rabbitmq": self.rabbitmq,
+            "logger": self.logger,
             "timescaledb": self.timescaledb
         }
 

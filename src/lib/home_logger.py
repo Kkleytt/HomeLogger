@@ -12,26 +12,31 @@ import aio_pika
 import json
 
 
-# Класс для валидации конфигурации
+# Класс для валидации конфигурации логера
 class LoggerConfig(BaseModel):
-    # Обязательные поля
-    host: str
-    port: int
-    username: str
-    password: str
-    queue: str
+    # --- Общие флаги для включения функционала ---
+    send_to_server: bool = False
+    print_to_console: bool = True
+
+    # --- Общие настройки проекта ---
     project_name: str
-    
-    # Необязательные поля
-    console_enable: bool = True
+
+    # --- Настройки консоли (опциональные) ---
     console_time_format: str = "%Y-%m-%d %H:%M:%S"
     console_time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("Europe/London"))
+
+    # --- Настройки RabbitMQ (опциональные) ---
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    queue: Optional[str] = None
 
     class Config:
         extra = "forbid"
 
 
-# Класс для валидации данных
+# Класс для валидации сообщений
 class MessageValidate(BaseModel):
     """ Класс для валидации данных взятых из очереди logs в RabbitMQ
 
@@ -108,7 +113,7 @@ class RabbitLogger:
             _current_logger_ctx_var.reset(self._context_token)
         if self._connection:
             await self._connection.close()
-            
+    
     async def _connect(self) -> bool:
         """ Функция для подключения к RabbitMQ
 
@@ -146,7 +151,7 @@ class RabbitLogger:
             await self._connect()
             
         # Печать в консоль
-        if self.config.console_enable:
+        if self.config.print_to_console:
             time_with_zone = datetime.fromisoformat(message['timestamp']).astimezone(self.config.console_time_zone)
             time_with_format = time_with_zone.strftime(self.config.console_time_format)
             print(
@@ -154,8 +159,11 @@ class RabbitLogger:
                 f"{message['module']} - {message['function']} | "
                 f"{message['message']} | [{message['code']}]"
             )
-            
         
+        # Если не нужно передавать лог в очередь
+        if not self.config.send_to_server:
+            return True
+            
         # Отправка в очередь RabbitMq    
         try:
             body = json.dumps(message, ensure_ascii=False).encode()
@@ -183,8 +191,8 @@ class RabbitLogger:
         # Получение имени модуля и функции
         frame = inspect.currentframe()
         if frame and frame.f_back and frame.f_back.f_back:
-            caller_frame = frame.f_back.f_back
-            caller = inspect.getframeinfo(caller_frame)
+            caller_frame = frame.f_back.f_back.f_back
+            caller = inspect.getframeinfo(caller_frame) # type: ignore
             mod = caller.filename.split("/")[-1]
             func = caller.function
         else:
@@ -210,7 +218,28 @@ class RabbitLogger:
             print(f"Валидация не пройдена: {e}")
             return None
 
-    async def info(self, message: str, code: int = 0) -> None:
+    async def _log(self, level: str, message: str, code: int = 0) -> bool:
+        """ Функция для отправки лога в RabbitMQ
+
+        Arguments:
+            level {str} -- Уровень лога
+            message {str} -- Сообщение лога
+
+        Keyword Arguments:
+            code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
+        """
+        
+        result_message = await self._build_message(level, message, code)
+        
+        if result_message:
+            return await self._send_message(result_message) # type: ignore
+        else:
+            return False
+            
+    async def info(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "INFO"
 
         Arguments:
@@ -218,14 +247,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("info", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-
-    async def warning(self, message: str, code: int = 0) -> None:
+        return await self._log("info", message, code) 
+    
+    async def warning(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "WARNING"
 
         Arguments:
@@ -233,14 +262,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("warning", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-
-    async def error(self, message: str, code: int = 0) -> None:
+        return await self._log("warning", message, code) 
+    
+    async def error(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "ERROR"
 
         Arguments:
@@ -248,14 +277,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("error", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-        
-    async def fatal(self, message: str, code: int = 0) -> None:
+        return await self._log("error", message, code) 
+    
+    async def fatal(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "FATAL"
 
         Arguments:
@@ -263,14 +292,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("fatal", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
+        return await self._log("fatal", message, code) 
     
-    async def alert(self, message: str, code: int = 0) -> None:
+    async def alert(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "ALERT"
 
         Arguments:
@@ -278,14 +307,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("alert", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-        
-    async def debug(self, message: str, code: int = 0) -> None:
+        return await self._log("alert", message, code) 
+    
+    async def debug(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "DEBUG"
 
         Arguments:
@@ -293,14 +322,14 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("debug", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-        
-    async def unknown(self, message: str, code: int = 0) -> None:
+        return await self._log("debug", message, code) 
+    
+    async def unknown(self, message: str, code: int = 0) -> bool:
         """ Функция для отправки лога в RabbitMQ со уровнем "UNKNOWN"
 
         Arguments:
@@ -308,16 +337,15 @@ class RabbitLogger:
 
         Keyword Arguments:
             code {int} -- Код сообщения (default: {0})
+
+        Returns:
+            bool -- Статус отправки
         """
         
-        result_message = await self._build_message("unknown", message, code)
-        
-        if result_message:
-            await self._send_message(result_message)
-
+        return await self._log("unknown", message, code) 
 
 # Инициализация логгера через контекстный менеджер
-def initialize_logger(config: LoggerConfig) -> RabbitLogger:
+async def init_logger(config: LoggerConfig) -> RabbitLogger:
     """ Инициализация логгера через контекстный менеджер
 
     Arguments:
@@ -326,7 +354,12 @@ def initialize_logger(config: LoggerConfig) -> RabbitLogger:
     Returns:
         RabbitLogger -- Объект логгера
     """
-    return RabbitLogger(config)
+    
+    logger = RabbitLogger(config)
+    await logger._connect()
+    token = _current_logger_ctx_var.set(logger)
+    logger._context_token = token
+    return logger
 
 
 # Пример использования
@@ -334,19 +367,10 @@ if __name__ == "__main__":
     async def main():
         from src.config import CurrentConfig as cfg  # type: ignore
 
-        config = LoggerConfig(
-            **cfg.rabbitmq,
-            project_name="MyApp"
-        )
-
-        async with initialize_logger(config) as logger:
-            _ = get_logger() # Получение логгера из контекста
-
-            await logger.info("Application started")
-            await logger.warning("This is a warning", code=1001)
-            await logger.error("Something went wrong!")
-
-            # Небольшая пауза, чтобы убедиться, что сообщения отправлены
-            await asyncio.sleep(0.5)
+        await init_logger(LoggerConfig(**cfg.logger))
+        lg = get_logger()
+        
+        for i in range(2):
+            await lg.info("Info message", code=i)
 
     asyncio.run(main())
