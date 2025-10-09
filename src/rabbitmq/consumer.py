@@ -6,7 +6,7 @@ import json                     # Работа с JSON строками
 import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
 from src.config import CurrentConfig as cfg
-from src.consumer.message_validation import validate_message
+from src.rabbitmq.message_validation import validate_message
 from src.modules.write_to_database import write_to_database
 
 
@@ -27,17 +27,16 @@ async def distribution_message(message: aio_pika.IncomingMessage):
     async with message.process():
         
         # Распаковка сообщения
-        message: dict = json.loads(message.body.decode())
-        print(message)
+        dict_message: dict = json.loads(message.body.decode())
+        print(dict_message)
         
         # Валидация сообщения
-        result_validation = await validate_message(message) # type: ignore
+        result_validation = await validate_message(dict_message)
         if not result_validation:
             raise Exception("Некорректные данные в сообщении!")
         
         # Перенаправление сообщения в дочерние модули
-        await write_to_database(log_message=message)
-        #await LOG_DB.insert_log(model=generate_log_model(message['project']), log=message)
+        await write_to_database(log_message=dict_message)
 
 # Запуск наблюдателя
 async def run_consumer(host: str, port: int, username: str, password: str, queue: str):

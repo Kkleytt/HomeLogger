@@ -1,4 +1,4 @@
-# app/src/lib/logger.py
+# app/src/lib/home_logger.py
 # Библиотека для логирования сообщений в RabbitMQ
 
 import inspect
@@ -360,17 +360,3 @@ async def init_logger(config: LoggerConfig) -> RabbitLogger:
     token = _current_logger_ctx_var.set(logger)
     logger._context_token = token
     return logger
-
-
-# Пример использования
-if __name__ == "__main__":
-    async def main():
-        from src.config import CurrentConfig as cfg  # type: ignore
-
-        await init_logger(LoggerConfig(**cfg.logger))
-        lg = get_logger()
-        
-        for i in range(2):
-            await lg.info("Info message", code=i)
-
-    asyncio.run(main())

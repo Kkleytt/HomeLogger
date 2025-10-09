@@ -1,0 +1,41 @@
+# app/src/wiki/wiki_library.py
+# Модуль с описанием функций для работы с библиотекой
+
+import asyncio
+from src.lib.home_logger import init_logger, get_logger, LoggerConfig
+
+# Пример использования
+async def main():
+    
+    # Конфигурация для старте логгера (Можно использовать частично)
+    config = {
+        "project_name": "Test",
+            
+        "print_to_console": True,
+        "console_time_format": "%Y-%m-%d %H:%M:%S",
+        "console_time_zone": "Europe/London",
+        
+        "send_to_server": True,
+        "host": "localhost",
+        "port": 2201,
+        "username": "logger",
+        "password": "logger",
+        "queue": "logger"
+    }
+    
+    # Инициализация логгера и получение его экземпляра
+    await init_logger(LoggerConfig(**config))
+    lg = get_logger()
+
+    # Пример использования логгера (code не обязательный аргумент, по стандарту 0)
+    await lg.info("Информационное сообщение", code=100)
+    await lg.warning("Сообщение о предупреждение")
+    await lg.alert("Сигнальное сообщение", code=200)
+    await lg.error("Сообщение об ошибке")
+    await lg.fatal("Сообщение об аварии", code=300)
+    await lg.debug("Сообщение о дебаге")
+    await lg.unknown("Неизвестное сообщение", code=999999)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -3,7 +3,7 @@
 
 import asyncio
 
-from src.consumer.consumer import run_consumer
+from src.rabbitmq.consumer import run_consumer
 from src.config import CurrentConfig as cfg
 
 
