@@ -1,4 +1,4 @@
-# message_validation.py
+# app/src/consumer/message_validation.py
 # Модуль для валидации данных взятых из очереди logs в RabbitMQ
 
 from datetime import datetime
@@ -16,8 +16,8 @@ class MessageValidate(BaseModel):
     project: str = Field(max_length=100, pattern=r'^[\w\s\-]+$')
     timestamp: datetime = Field(description="Timestamp в формате ISO 8601")
     level: Literal["info", "warning", "error", "fatal", "debug", "alert", "unknown"] = Field(max_length=10)  # Ограниченное множество возможных уровней
-    module: str = Field(max_length=100, pattern=r'^[\w\s\-]+$')
-    function: str = Field(max_length=100, pattern=r'^[\w\s\-]+$')
+    module: str = Field(max_length=100)
+    function: str = Field(max_length=100)
     message: str = Field(max_length=1000)
     code: int = Field(ge=0, le=999999)  # Приведение числа к строке с заполнением нулей слева до длины 6 символов
 

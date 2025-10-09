@@ -1,4 +1,4 @@
-# connect_wiki.py
+# app/src/wiki/postgres_client.py
 # Модуль с описанием как работать с базой данных
 
 import asyncio

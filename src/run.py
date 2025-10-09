@@ -1,4 +1,4 @@
-# run.py
+# app/src/run.py
 # Модуль для запуска проекта
 
 import asyncio

@@ -1,4 +1,4 @@
-# config.py
+# app/src/config.py
 # Модуль для получения параметров окружения
 
 from dotenv import load_dotenv

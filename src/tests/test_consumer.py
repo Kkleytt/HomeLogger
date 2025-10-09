@@ -1,4 +1,4 @@
-# test_consumer.py
+# app/src/tests/test_consumer.py
 # Модуль для отправки сообщений в очередь RabbitMQ
 
 import asyncio

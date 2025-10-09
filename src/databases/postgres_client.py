@@ -1,4 +1,4 @@
-# postgres_client.py
+# app/src/databases/postgres_client.py
 # Модуль для работы с PostgreSQL / TimeScaleDB
 
 from datetime import datetime, timedelta
@@ -439,21 +439,15 @@ class Client:
 
 
 class LogClient(Client):
-    async def insert_log(self, model: Type, validation_model: Type, log: dict) -> Optional[Any] | None:
+    async def insert_log(self, model: Type, log: dict) -> Optional[Any] | None:
         """ Функция для вставки лога в базу данных + валидация
 
         Arguments:
             model {Type} -- Модель SqlAlchemy
-            validation_model {Type} -- Модель Pydantic
             log {dict} -- Словарь с данными лога
 
         Returns:
             Optional[Any] | None -- Данные записи в БД или None (если произошла ошибка)
         """
         
-        try:
-            valid_message = validation_model(**log)
-        except ValidationError as e:
-            return None
-        
-        return await self.insert_model(model=model, data=[log])
+        return await self.insert_model(model=model, data=[log], fetch_many=False)

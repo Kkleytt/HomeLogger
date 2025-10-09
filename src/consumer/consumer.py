@@ -1,4 +1,4 @@
-# consumer.py
+# app/src/consumer/consumer.py
 # Модуль для получения данных из очереди RabbitMQ и перенаправления их в дочерние модули
 
 import asyncio                  # Асинхронный запуск функций

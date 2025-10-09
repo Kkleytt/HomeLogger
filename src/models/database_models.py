@@ -1,4 +1,4 @@
-# database_models.py
+# app/src/models/database_models.py
 # Модуль для генерации моделей базы данных
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Index

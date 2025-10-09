@@ -1,4 +1,4 @@
-# wiki_config.py
+# app/src/wiki/wiki_config.py
 # Модуль с описанием как работать с конфигурацией проекта
 
 from src.config import CurrentConfig as cfg
