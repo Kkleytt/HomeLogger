@@ -5,22 +5,18 @@ import asyncio
 from src.lib.home_logger import init_logger, get_logger, LoggerConfig
 
 # Пример использования
-async def main():
+async def test_hui():
     
     # Конфигурация для старте логгера (Можно использовать частично)
     config = {
         "project_name": "Test",
-            
-        "print_to_console": True,
-        "console_time_format": "%Y-%m-%d %H:%M:%S",
-        "console_time_zone": "Europe/London",
         
-        "send_to_server": True,
-        "host": "localhost",
-        "port": 2201,
-        "username": "logger",
-        "password": "logger",
-        "queue": "logger"
+        "rabbitmq": {
+            "enabled": False,
+        },
+        "console": {
+            "enabled": True,
+        }
     }
     
     # Инициализация логгера и получение его экземпляра
@@ -38,4 +34,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test_hui())
