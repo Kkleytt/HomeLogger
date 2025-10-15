@@ -26,6 +26,7 @@ class Writer:
         ts_str = dt.strftime(self.config.time_format)
         
         data = {
+            "project": Text(message["project"], style=self.config.project_style),
             "timestamp": Text(ts_str, style=self.config.timestamp_style),
             "level": Text(
                 message["level"].upper(),

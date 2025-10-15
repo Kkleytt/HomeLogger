@@ -47,7 +47,8 @@ class Config:
     def local_console(self):
         return {
             "enabled": os.getenv("CONSOLE_ENABLED", "True"),
-            "format": os.getenv("CONSOLE_FORMAT", "[{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
+            "format": os.getenv("CONSOLE_FORMAT", "[{project}] [{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
+            "project_style": os.getenv("CONSOLE_PROJECT_STYLE", "bold cyan"),
             "timestamp_style": os.getenv("CONSOLE_TIMESTAMP_STYLE", "dim cyan"),
             "level_styles": {
                 "info": os.getenv("CONSOLE_LEVEL_INFO_STYLE", "bold magenta"),
