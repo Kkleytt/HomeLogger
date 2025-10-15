@@ -1,21 +1,22 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator, IPvAnyAddress
+from typing import Optional, Union, Literal
 from zoneinfo import ZoneInfo
+
 
 
 class ServerConfig(BaseModel):
     class TimescaleDB(BaseModel):        
         enabled: bool = True
         
-        host: Optional[str] = "localhost"
-        port: Optional[int] = 5432
+        host: Union[IPvAnyAddress, Literal["localhost"]] = "localhost"
+        port: Optional[int] = Field(ge=1, le=65535, description="TCP/UDP port (1-65535)", default=5432)
         username: Optional[str] = "logger"
         password: Optional[str] = "logger"
         database: Optional[str] = "logger"
 
     class RabbitMQ(BaseModel):
-        host: Optional[str] = "localhost"
-        port: Optional[int] = 5672
+        host: Union[IPvAnyAddress, Literal["localhost"]] = "localhost"
+        port: Optional[int] = Field(ge=1, le=65535, description="TCP/UDP port (1-65535)", default=5672)
         username: Optional[str] = "guest"
         password: Optional[str] = "guest"
         queue: Optional[str] = "logs"
@@ -46,6 +47,8 @@ class ServerConfig(BaseModel):
     rabbitmq: RabbitMQ = Field(default_factory=RabbitMQ)
     timescaledb: TimescaleDB = Field(default_factory=TimescaleDB)
     console: Console = Field(default_factory=Console)
+
+
 # Класс для валидации настроек библиотеки
 class LibraryConfig(BaseModel):
     """ Класс для валидации настроек библиотеки
@@ -56,8 +59,8 @@ class LibraryConfig(BaseModel):
     
     class Rabbit(BaseModel):
         enabled: bool = False
-        host: str = "localhost"
-        port: int = 5672
+        host: Union[IPvAnyAddress, Literal["localhost"]] = "localhost"
+        port: int = Field(ge=1, le=65535, description="TCP/UDP port (1-65535)", default=5672)
         username: str = "guest"
         password: str = "guest"
         queue: str = "logs"

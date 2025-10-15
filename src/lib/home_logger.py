@@ -23,13 +23,13 @@ class LevelStyles(BaseModel):
         BaseModel {_type_} -- Базовый класс для валидации данных
     """
     
-    info: str = "bold magenta"
-    warning: str = "bold yellow"
-    error: str = "bold red"
-    fatal: str = "bold white on red"
-    debug: str = "dim cyan"
-    alert: str = "bold magenta"
-    unknown: str = ""
+    info: str = Field(default="bold magenta")
+    warning: str = Field(default="bold yellow")
+    error: str = Field(default="bold red")
+    fatal: str = Field(default="bold white on red")
+    debug: str = Field(default="dim cyan")
+    alert: str = Field(default="bold magenta")
+    unknown: str = Field(default="")
 
     class Config:
         extra = "forbid"
@@ -42,17 +42,17 @@ class ConsoleConfig(BaseModel):
         BaseModel {_type_} -- Базовый класс для валидации данных
     """
     
-    enabled: bool = True
-    format: str = "[{timestamp}] [{level}] {module}.{function}: {message} [{code}]"
+    enabled: bool = Field(default=True)
+    format: str = Field(default="[{timestamp}] [{level}] {module}.{function}: {message} [{code}]")
     
-    timestamp_style: str = "dim cyan"
+    timestamp_style: str = Field(default="dim cyan")
     level_styles: LevelStyles = Field(default_factory=LevelStyles)
-    module_style: str = "green"
-    function_style: str = "magenta"
-    message_style: str = ""
-    code_style: str = "dim"
+    module_style: str = Field(default="green")
+    function_style: str = Field(default="magenta")
+    message_style: str = Field(default="")
+    code_style: str = Field(default="dim")
     
-    time_format: str = "%Y-%m-%d %H:%M:%S"
+    time_format: str = Field(default="%Y-%m-%d %H:%M:%S")
     time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("UTC"))
 
     class Config:
@@ -66,13 +66,13 @@ class RabbitMQConfig(BaseModel):
         BaseModel {_type_} -- Базовый класс для валидации данных
     """
     
-    enabled: bool = False
+    enabled: bool = Field(default=False)
     
-    host: Optional[str] = None
-    port: Optional[int] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    queue: Optional[str] = None
+    host: Optional[str] = Field(default=None)
+    port: Optional[int] = Field(default=None)
+    username: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(default=None)
+    queue: Optional[str] = Field(default=None)
     
     class Config:
         extra = "forbid"
@@ -116,7 +116,7 @@ class LoggerConfig(BaseModel):
     """
     
     # --- Общие настройки проекта (Обязательные) ---
-    project_name: str
+    project_name: str = Field(default="DefaultProject")
 
     # --- Настройки логирования в RabbitMQ 
     rabbitmq: RabbitMQConfig = Field(default_factory=RabbitMQConfig)
