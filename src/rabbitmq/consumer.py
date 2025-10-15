@@ -5,17 +5,21 @@ import asyncio                  # Асинхронный запуск функц
 import json                     # Работа с JSON строками
 import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
-from src.config import CurrentConfig as cfg
 from src.rabbitmq.message_validation import validate_message
-from src.modules.write_to_database import write_to_database
+from src.modules.write_to_database import Writer as DatabaseWriter
+from src.modules.write_to_console import Writer as ConsoleWriter
+from src.models.config_models import ServerConfig
+from src.config import CurrentConfig as cfg
 
 
-
+GlobalConfig: ServerConfig
+ConsoleClient: ConsoleWriter
+DatabaseClient: DatabaseWriter
 
 # Генерация URL для подключения к RabbitMQ
-async def generate_url(host: str, port: int, username: str, password: str) -> str | None:
-    if host and port and username and password:
-        return f"amqp://{username}:{password}@{host}:{port}/"
+async def generate_url(cfg: ServerConfig.RabbitMQ) -> str | None:
+    if cfg.host and cfg.port and cfg.username and cfg.password:
+        return f"amqp://{cfg.username}:{cfg.password}@{cfg.host}:{cfg.port}/"
     else:
         return None
 
@@ -28,27 +32,36 @@ async def distribution_message(message: aio_pika.IncomingMessage):
         
         # Распаковка сообщения
         dict_message: dict = json.loads(message.body.decode())
-        print(dict_message)
         
         # Валидация сообщения
         result_validation = await validate_message(dict_message)
         if not result_validation:
             raise Exception("Некорректные данные в сообщении!")
         
-        # Перенаправление сообщения в дочерние модули
-        await write_to_database(log_message=dict_message)
+        # Запись сообщения в БД
+        if GlobalConfig.timescaledb.enabled:
+            await DatabaseClient.write_log(log=dict_message)
+            
+        # Запись в консоль
+        if GlobalConfig.console.enabled:
+            await ConsoleClient.print_log(dict_message)
 
 # Запуск наблюдателя
-async def run_consumer(host: str, port: int, username: str, password: str, queue: str):
+async def run_consumer(config: ServerConfig):
+    global GlobalConfig
+    global ConsoleClient
+    global DatabaseClient
+
+    GlobalConfig = config
     
     # Подключение к RabbitMq
-    url = await generate_url(host, port, username, password)
+    url = await generate_url(GlobalConfig.rabbitmq)
     connection = await aio_pika.connect_robust(url)
     channel = await connection.channel()
 
     # Создание очереди
     message_queue = await channel.declare_queue(
-        queue,
+        GlobalConfig.rabbitmq.queue,
         durable=True,
         auto_delete=False,
         arguments={"x-message-ttl": 30000}
@@ -56,6 +69,12 @@ async def run_consumer(host: str, port: int, username: str, password: str, queue
 
     # Подписываемся на callback рассылку
     consume_tag = await message_queue.consume(distribution_message) # type: ignore
+    
+    # Подключение к консоли
+    ConsoleClient = ConsoleWriter(GlobalConfig.console)
+    
+    # Подключение к БД
+    DatabaseClient = DatabaseWriter(GlobalConfig.timescaledb)
 
     # Бесконечный цикл проверки сообщений
     try:
@@ -72,4 +91,9 @@ async def run_consumer(host: str, port: int, username: str, password: str, queue
     
 # Пример использования    
 if __name__ == "__main__":
-    asyncio.run(run_consumer(**cfg.rabbitmq))
+    config = {
+        "rabbitmq": cfg.rabbitmq,
+        "console": cfg.local_console,
+        "timescaledb": cfg.timescaledb
+    }
+    asyncio.run(run_consumer(ServerConfig(**config))) # type: ignore

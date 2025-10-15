@@ -10,15 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
+from src.models.config_models import ServerConfig
+
 
 class Client:
-    def __init__(self, host: str, port: int, username: str, password: str, database: str) -> None:
+    def __init__(self, config: ServerConfig.TimescaleDB) -> None:
         # Установка значений переменных
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.database = database
+        self.host = config.host
+        self.port = config.port
+        self.username = config.username
+        self.password = config.password
+        self.database = config.database
 
         # Служебные переменные
         self.connected = False
@@ -86,7 +88,7 @@ class Client:
         try:
 
             # Преобразование пароля
-            quoted_password = quote_plus(self.password)
+            quoted_password = quote_plus(self.password) #type: ignore
 
             # Формирование строки подключения в зависимости от типа СУБД
             url = f"postgresql+asyncpg://{self.username}:{quoted_password}@{self.host}:{self.port}/{self.database}"

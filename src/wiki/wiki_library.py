@@ -16,6 +16,7 @@ async def test_hui():
         },
         "console": {
             "enabled": True,
+            "time_zone": "Europe/Moscow",
         }
     }
     

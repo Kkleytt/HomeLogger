@@ -27,31 +27,46 @@ class Config:
         }
         
     @property
-    def logger(self):
-        return {
-            "project_name": os.getenv("LOGGER_PROJECT", "DefaultProject"),
-            
-            "print_to_console": os.getenv("LOGGER_PRINT_TO_CONSOLE", "True"),
-            "console_time_format": os.getenv("LOGGER_CONSOLE_TIME_FORMAT", "%Y-%m-%d %H:%M:%S"),
-            "console_time_zone": os.getenv("LOGGER_CONSOLE_TIME_ZONE", "Europe/London"),
-            
-            "send_to_server": os.getenv("LOGGER_SEND_TO_SERVER", "True"),
-            "host": os.getenv("LOGGER_HOST", "localhost"),
-            "port": int(os.getenv("LOGGER_PORT", "5672")),
-            "username": os.getenv("LOGGER_USERNAME", "logger"),
-            "password": os.getenv("LOGGER_PASSWORD", "logger"),
-            "queue": os.getenv("LOGGER_QUEUE", "logger")
-        }
-
-    @property
     def timescaledb(self):
         return {
+            "enabled": os.getenv("TIMESCALEDB_ENABLED", False),
             "host": os.getenv("TIMESCALEDB_HOST", "localhost"),
             "port": int(os.getenv("TIMESCALEDB_PORT", "5432")),
             "username": os.getenv("TIMESCALEDB_USERNAME", "logger"),
             "password": os.getenv("TIMESCALEDB_PASSWORD", "logger"),
             "database": os.getenv("TIMESCALEDB_DATABASE", "logger")
         }
+        
+    @property
+    def logger(self):
+        return {
+            "project_name": os.getenv("PROJECT_NAME", "DefaultProject"),
+        }
+        
+    @property
+    def local_console(self):
+        return {
+            "enabled": os.getenv("CONSOLE_ENABLED", "True"),
+            "format": os.getenv("CONSOLE_FORMAT", "[{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
+            "timestamp_style": os.getenv("CONSOLE_TIMESTAMP_STYLE", "dim cyan"),
+            "level_styles": {
+                "info": os.getenv("CONSOLE_LEVEL_INFO_STYLE", "bold magenta"),
+                "warning": os.getenv("CONSOLE_LEVEL_WARNING_STYLE", "bold yellow"),
+                "error": os.getenv("CONSOLE_LEVEL_ERROR_STYLE", "bold red"),
+                "fatal": os.getenv("CONSOLE_LEVEL_FATAL_STYLE", "bold white on red"),
+                "debug": os.getenv("CONSOLE_LEVEL_DEBUG_STYLE", "dim cyan"),
+                "alert": os.getenv("CONSOLE_LEVEL_ALERT_STYLE", "bold magenta"),
+                "unknown": os.getenv("CONSOLE_LEVEL_UNKNOWN_STYLE", "")
+            },
+            "module_style": os.getenv("CONSOLE_MODULE_STYLE", "green"),
+            "function_style": os.getenv("CONSOLE_FUNCTION_STYLE", "magenta"),
+            "message_style": os.getenv("CONSOLE_MESSAGE_STYLE", ""),
+            "code_style": os.getenv("CONSOLE_CODE_STYLE", "dim"),
+            "time_format": os.getenv("CONSOLE_TIME_FORMAT", "%Y-%m-%d %H:%M:%S"),
+            "time_zone": os.getenv("CONSOLE_TIME_ZONE", "UTC")
+        }
+
+    
 
     def get_all_config(self) -> dict:
         """ Функция для получения полного словаря с конфигурациями
@@ -62,8 +77,9 @@ class Config:
         
         return {
             "rabbitmq": self.rabbitmq,
+            "timescaledb": self.timescaledb,
             "logger": self.logger,
-            "timescaledb": self.timescaledb
+            "console": self.local_console
         }
 
 

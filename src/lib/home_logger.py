@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import aio_pika
 import json
-import os
 import re
 
 from rich.console import Console
@@ -30,7 +29,7 @@ class LevelStyles(BaseModel):
     fatal: str = "bold white on red"
     debug: str = "dim cyan"
     alert: str = "bold magenta"
-    unknown: str = "bold white on red"
+    unknown: str = ""
 
     class Config:
         extra = "forbid"
@@ -54,7 +53,7 @@ class ConsoleConfig(BaseModel):
     code_style: str = "dim"
     
     time_format: str = "%Y-%m-%d %H:%M:%S"
-    time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("Europe/London"))
+    time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("UTC"))
 
     class Config:
         extra = "forbid"

@@ -8,6 +8,9 @@ from src.config import CurrentConfig as cfg
 
 
 async def main():
+    config = {
+        
+    }
     
     # Запуск consumer
     await run_consumer(**cfg.rabbitmq)

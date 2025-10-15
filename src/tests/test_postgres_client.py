@@ -9,6 +9,7 @@ from sqlalchemy import Column, Integer, String
 
 from src.databases.postgres_client import Client 
 from src.config import CurrentConfig as cfg
+from src.models.config_models import ServerConfig
 
 
 Base = declarative_base()
@@ -21,14 +22,14 @@ class BaseModel(Base):
 # Тест на подключение к базе данных
 @pytest.mark.asyncio
 async def test_connect_success():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     assert await client.connect() is True
     assert client.connected is True
 
 # Тест на отключение от базы данных
 @pytest.mark.asyncio
 async def test_disconnect():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     assert await client.disconnect() is True
     assert client.connected is False
@@ -36,7 +37,7 @@ async def test_disconnect():
 # Тест на проверку подключения
 @pytest.mark.asyncio
 async def test_is_connected():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     assert await client.connect_state() is True
     client._last_check = datetime.now() - timedelta(minutes=31)
@@ -46,7 +47,7 @@ async def test_is_connected():
 # Тест на добавление таймера на переподключение
 @pytest.mark.asyncio
 async def test_add_timer_reconnect():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
 
     # Проверка включения таймера
     result = await client.add_timer_reconnect(interval=30, state=True)
@@ -64,7 +65,7 @@ async def test_add_timer_reconnect():
 # Тест на создание таблицы
 @pytest.mark.asyncio
 async def test_create_table():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     assert await client.create_table_if_not_exists(BaseModel) is True
     
@@ -72,7 +73,7 @@ async def test_create_table():
 # Тест на добавление модели в базу данных (one)
 @pytest.mark.asyncio
 async def test_insert_model_one():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     result = await client.insert_model(BaseModel, [{"name": "Fedora99"}])
     assert result.name == "Fedora99" # type: ignore
@@ -82,7 +83,7 @@ async def test_insert_model_one():
 # Тест на добавление модели в базу данных (many)
 @pytest.mark.asyncio
 async def test_insert_model_many():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     result = await client.insert_model(BaseModel, [{"name": "Fedora99"}, {"name": "Fedora98"}], fetch_many=True)#type: ignore
     assert result[0].name == "Fedora99" # type: ignore
@@ -92,7 +93,7 @@ async def test_insert_model_many():
 # Тест на выборку модели из базы данных (one)
 @pytest.mark.asyncio
 async def test_select_model_one():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Alice"}])
     result = await client.select_model(BaseModel, BaseModel.name == "Alice")
@@ -103,7 +104,7 @@ async def test_select_model_one():
 # Тест на выборку модели из базы данных (many)
 @pytest.mark.asyncio
 async def test_select_model_many():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Alice many"}, {'name': 'Alice many'}], fetch_many=True)
     result = await client.select_model(BaseModel, BaseModel.name == "Alice many", fetch_many=True)
@@ -113,7 +114,7 @@ async def test_select_model_many():
 # Тест на обновление записи (one)
 @pytest.mark.asyncio
 async def test_update_record_one():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Charlie"}])
     record = await client.select_model(BaseModel, BaseModel.name == "Charlie")
@@ -125,7 +126,7 @@ async def test_update_record_one():
 # Тест на обновление записи (many)
 @pytest.mark.asyncio
 async def test_update_record_many():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Charlie"}, {'name': 'Charlie'}], fetch_many=True)
     result = await client.update_record_partition(BaseModel, BaseModel.name == "Charlie", new_data={"name": "Charlie Updated Many"}, fetch_many=True)
@@ -135,7 +136,7 @@ async def test_update_record_many():
 # Тест на удаление записи (one)
 @pytest.mark.asyncio
 async def test_delete_record_one():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Dave"}])
     record = await client.select_model(BaseModel, BaseModel.name == "Dave")
@@ -147,7 +148,7 @@ async def test_delete_record_one():
 # Тест на удаление записи (many)
 @pytest.mark.asyncio
 async def test_delete_record_many():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await client.insert_model(BaseModel, [{"name": "Dave"}, {'name': 'Dave'}], fetch_many=True)
     result = await client.delete_record(BaseModel, BaseModel.name == "Dave", fetch_many=True)
@@ -158,7 +159,7 @@ async def test_delete_record_many():
 # Тест на выполнение произвольного SQL-запроса (one)
 @pytest.mark.asyncio
 async def test_manual_execute_one(): 
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     result = await client.manual_execute("SELECT * FROM test_table WHERE name = 'Charlie Updated One'")
     assert result["name"] == "Charlie Updated One" # type: ignore
@@ -166,7 +167,7 @@ async def test_manual_execute_one():
 # Тест на выполнение произвольного SQL-запроса (many)
 @pytest.mark.asyncio
 async def test_manual_execute_many(): 
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     result = await client.manual_execute("SELECT * FROM test_table WHERE name = 'Charlie Updated One'", fetch_many=True)
     assert result[0]["name"] == "Charlie Updated One" # type: ignore
@@ -174,13 +175,13 @@ async def test_manual_execute_many():
 # Тест на сброс базы данных
 @pytest.mark.asyncio
 async def test_remove_all_data(): 
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     result = await client.manual_execute("DELETE FROM test_table", response=False)
     assert result == None # type: ignore
 
 async def test_piska():
-    client = Client(**cfg.timescaledb)
+    client = Client(ServerConfig.TimescaleDB(**cfg.timescaledb))
     await client.connect()
     await test_insert_model_many()
     result = await client.manual_execute("SELECT * FROM test_table WHERE name = 'Fedora99'", fetch_many=False)
