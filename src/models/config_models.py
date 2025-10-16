@@ -57,7 +57,6 @@ class ServerConfig(BaseModel):
             enabled: bool = Field(default=False)
             
             type: Literal["zip", "tar", "gz", "bz2", "xz"] = Field(default="zip")
-            format: str = Field(default="{project}_{date}.{type}")
             compression_level: int = Field(ge=0, le=9, default=6)
             directory: str = Field(default="archive")
             
@@ -65,7 +64,7 @@ class ServerConfig(BaseModel):
             count: int = Field(ge=1, default=10) # Количество старых файлов
             age: int = Field(default=10 * 24400, ge=24400) # Возраст файла (10 дней)
             
-        enabled: bool = Field(default=False)
+        enabled: bool = Field(default=True)
         
         share_directory: str = Field(default="logs")
         project_directory: str = Field(default="{project}")

@@ -8,6 +8,7 @@ import aio_pika                 # Асинхронный движок для р�
 from src.rabbitmq.message_validation import validate_message
 from src.modules.write_to_database import Writer as DatabaseWriter
 from src.modules.write_to_console import Writer as ConsoleWriter
+from src.modules.write_to_files import Writer as FilesWriter
 from src.models.config_models import ServerConfig
 from src.config import CurrentConfig as cfg
 
@@ -15,6 +16,7 @@ from src.config import CurrentConfig as cfg
 GlobalConfig: ServerConfig
 ConsoleClient: ConsoleWriter
 DatabaseClient: DatabaseWriter
+FilesClient: FilesWriter
 
 # Генерация URL для подключения к RabbitMQ
 async def generate_url(cfg: ServerConfig.RabbitMQ) -> str | None:
@@ -45,12 +47,17 @@ async def distribution_message(message: aio_pika.IncomingMessage):
         # Запись в консоль
         if GlobalConfig.console.enabled:
             await ConsoleClient.print_log(dict_message)
+            
+        # Запись в файлы
+        if GlobalConfig.files.enabled:
+            await FilesClient.write_log(dict_message)
 
 # Запуск наблюдателя
 async def run_consumer(config: ServerConfig):
     global GlobalConfig
     global ConsoleClient
     global DatabaseClient
+    global FilesClient
 
     GlobalConfig = config
     
@@ -75,6 +82,9 @@ async def run_consumer(config: ServerConfig):
     
     # Подключение к БД
     DatabaseClient = DatabaseWriter(GlobalConfig.timescaledb)
+    
+    # Подключение к файлам
+    FilesClient = FilesWriter(GlobalConfig.files)
 
     # Бесконечный цикл проверки сообщений
     try:
@@ -87,6 +97,7 @@ async def run_consumer(config: ServerConfig):
         await message_queue.cancel(consume_tag)
         await channel.close()
         await connection.close()
+        await FilesClient.close_all()
         
     
 # Пример использования    

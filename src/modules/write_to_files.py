@@ -1,5 +1,7 @@
 import os
 import shutil
+import asyncio
+import aiofiles
 import zipfile
 import tarfile
 import gzip
@@ -8,7 +10,7 @@ import lzma
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
-from typing import Optional, Literal, Union, Dict
+from typing import Optional, Literal, Dict
 import io
 from pydantic import BaseModel, Field
 
@@ -34,24 +36,18 @@ class Writer:
         self.cfg = config
         
         # Данные активного файла
-        self._active_file_data: Dict = {}
-        self._active_file_handle: Dict = {}
-        self._log_dir: Dict = {}
-        self._archive_dir: Dict = {}
+        self._active_file_data: Dict[str, FileData] = {}
+        self._active_file_handle: Dict[str, io.TextIOWrapper] = {}  # Пока синхронный файл, см. ниже
+        self._log_dir: Dict[str, Path] = {}
+        self._archive_dir: Dict[str, Path] = {}
 
-        # Создаём директории
-        # self._create_directory()
-
-        # Открываем первый файл
-        # self._open_new_file()
-        
     def get_info(self) -> ServerConfig.Files:
         return self.cfg
         
-    def __enter__(self):
+    async def __aenter__(self):
         return self
     
-    def _create_directory(self, project) -> bool:
+    async def _create_directory(self, project: str) -> bool:
         """ Функция для создания базовых директорий проекта
 
         Returns:
@@ -69,15 +65,14 @@ class Writer:
 
     def _write_start_log(self, project: str):
         """Записывает заголовок файла"""
-        if not self._active_file_handle[project]:
+        if not self._active_file_handle.get(project):
             return
 
-
         start_time_str = self._active_file_data[project].date_start.replace(tzinfo=ZoneInfo(self.cfg.date_timezone)).strftime("%d:%m:%Y %H:%M:%S %z")
-        file_name = self._active_file_data[project].path.name if self._active_file_data[project].path else "unknown"
+        file_name = self._active_file_data[project].path.name if self._active_file_data[project].path else "unknown" # type: ignore
 
         # Фиксированная ширина содержимого между │ и │
-        content_width = 80  # 80 символов ширина строки - 1 на левый │
+        content_width = 80
 
         # Формируем строки с правильным выравниванием
         line1 = f"│ LOG FILE START{' ' * (content_width - len('LOG FILE START') - 2)} │"
@@ -96,21 +91,19 @@ class Writer:
         self._active_file_handle[project].write(header)
         self._active_file_handle[project].flush()
 
-    def _write_end_log(self, project):
+    def _write_end_log(self, project: str):
         """Записывает футер файла перед закрытием"""
-        if not self._active_file_handle[project]:
+        if not self._active_file_handle.get(project):
             return
 
         # Закрываем файл для получения актуального размера
         self._active_file_handle[project].close()
 
-        if self._active_file_data[project].path and self._active_file_data[project].path.exists():
-            file_size = self._active_file_data[project].path.stat().st_size
+        if self._active_file_data[project].path and self._active_file_data[project].path.exists(): # type: ignore
+            file_size = self._active_file_data[project].path.stat().st_size # type: ignore
             size_str = self._format_size(file_size)
             end_time_str = datetime.now(ZoneInfo(self.cfg.date_timezone)).strftime("%d:%m:%Y %H:%M:%S %z")
-
-            # Фиксированная ширина содержимого между │ и │
-            content_width = 79
+            content_width = 80
 
             line1 = f"│ LOG FILE END{' ' * (content_width - len('LOG FILE END') - 2)} │"
             line2 = f"│ End Date: {end_time_str}{' ' * (content_width - len('End Date: ') - len(end_time_str) - 2)} │"
@@ -127,11 +120,11 @@ class Writer:
             )
 
             # Открываем файл в режиме дозаписи и добавляем футер
-            with open(self._active_file_data[project].path, 'a', encoding='utf-8') as f:
+            with open(self._active_file_data[project].path, 'a', encoding='utf-8') as f: # type: ignore
                 f.write(footer)
 
         # Переоткрываем файл для продолжения записи (если нужно)
-        self._active_file_handle[project] = open(self._active_file_data[project].path, 'a', encoding='utf-8')
+        self._active_file_handle[project] = open(self._active_file_data[project].path, 'a', encoding='utf-8') # type: ignore
 
     def _format_size(self, size_bytes: int) -> str:
         """ Функция для форматирования размера файла в читаемый вид
@@ -149,7 +142,7 @@ class Writer:
             size_bytes = int(size_bytes / 1024.0)
         return f"{size_bytes:.1f} TB"
 
-    def _open_new_file(self, project: str) -> bool:
+    async def _open_new_file(self, project: str) -> bool:
         """ Функция для открытия нового файла и инициализации переменных
 
         Returns:
@@ -158,9 +151,8 @@ class Writer:
         
         try:
             # Проверяем существует ли активный файл и закрываем его
-            if self._active_file_handle[project]:
-                if self._write_end_log(project) is False:
-                    return False
+            if self._active_file_handle.get(project):
+                self._write_end_log(project)
 
             # Генерируем данные активного файла
             filename = self.cfg.filename.format(
@@ -170,30 +162,28 @@ class Writer:
             
             # Создаем директории по пути файла
             self._active_file_data[project].path = self._log_dir[project] / filename
-            self._active_file_data[project].path.parent.mkdir(parents=True, exist_ok=True)
-            print(self._active_file_data[project].path)
+            self._active_file_data[project].path.parent.mkdir(parents=True, exist_ok=True) # type: ignore
             
             # Открываем файл
-            self._active_file_handle[project] = open(self._active_file_data[project].path, 'a', encoding='utf-8')
+            self._active_file_handle[project] = open(self._active_file_data[project].path, 'a', encoding='utf-8') # type: ignore
             
             # Сохраняем данные файла
             self._active_file_data[project].count_lines = 0
             self._active_file_data[project].date_start = datetime.now(ZoneInfo("UTC"))
             
             # Записываем заголовок
-            if self._write_start_log(project) is False:
-                return False
+            self._write_start_log(project)
             
             # Проверяем, нужно ли архивировать старый файл
             if self.cfg.archive.enabled:
-                self.check_old_logfile(project)
+                await self.check_old_logfile(project)
             
             return True
         except Exception as e:
             print(f"Ошибка открытия файла: {e}")
             return False
 
-    def write_log(self, log_data: dict) -> bool:
+    async def write_log(self, log_data: dict) -> bool:
         """ Функция для записи лога в файл
 
         Arguments:
@@ -209,14 +199,13 @@ class Writer:
             
             # Проверяем что объект проекта уже хранится в кэше
             if project not in self._active_file_handle:
-                self._active_file_handle[project] = None
                 self._active_file_data[project] = FileData()
-                self._create_directory(project)
-                self._open_new_file(project)
+                await self._create_directory(project)
+                await self._open_new_file(project)
                 
             # Проверяем на смену файла
             if self._should_rotate(project):
-                self._open_new_file(project)
+                await self._open_new_file(project)
                 
 
             # Форматируем строку лога
@@ -240,8 +229,16 @@ class Writer:
             print(f"Ошибка записи лога: {e}")
             return False
 
-    def _should_rotate(self, project) -> bool:
-        """Проверяет, нужно ли сменить файл"""
+    def _should_rotate(self, project: str) -> bool:
+        """ Функция для проверки необходимости смены файла
+
+        Arguments:
+            project {str} -- Имя проекта
+
+        Returns:
+            bool -- Необходимость смены файла
+        """
+        
         now = datetime.now()
         current_time_str = now.strftime("%H:%M")
 
@@ -262,88 +259,139 @@ class Writer:
 
         # Проверка по размеру
         if self.cfg.rotation.trigger == "size":
-            if self._active_file_data[project].path and self._active_file_data[project].path.stat().st_size >= self.cfg.rotation.size:
+            if self._active_file_data[project].path and self._active_file_data[project].path.stat().st_size >= self.cfg.rotation.size: # type: ignore
                 return True
 
         return False
 
-    def check_old_logfile(self, project: str):
-        """
-        Архивирует старые (неактивные) файлы по двум критериям:
-        1. По количеству файлов: если файлов больше N, архивирует самый старый.
-        2. По возрасту: если файл старше X секунд, архивирует его.
+    async def check_old_logfile(self, project: str) -> bool:
+        """ Функция для проверки старых файлов и архивации
+
+        Arguments:
+            project {str} -- Имя проекта
+
+        Returns:
+            bool -- Статус проверки старых файлов
         """
         
-        log_dir = self._log_dir[project]  # или просто self._log_dir, если project — это поддиректория
-        archive_dir = self._archive_dir[project]
-        
-        print(log_dir, archive_dir)
+        try:
+            log_dir = self._log_dir[project]
+            archive_dir = self._archive_dir[project]
 
-        # Получаем список файлов в директории (не активный файл)
-        current_file = self._active_file_data[project].path
-        log_files = [
-            f for f in log_dir.glob("*.log") 
-            if f != current_file  # исключаем активный файл
-        ]
+            # Получаем список файлов в директории (не активный файл)
+            current_file = self._active_file_data[project].path
+            log_files = [
+                f for f in log_dir.glob("*.log") 
+                if f != current_file
+            ]
 
-        # 1. Архивация по количеству файлов
-        if self.cfg.archive.trigger == "count" and len(log_files) > self.cfg.archive.count:
-            # Сортируем файлы по времени модификации (сначала самые старые)
-            sorted_files = sorted(log_files, key=lambda f: f.stat().st_mtime)
-            
-            # Архивируем лишние файлы (те, что превышают лимит)
-            excess_count = len(log_files) - self.cfg.archive.count
-            for i in range(excess_count):
-                oldest_file = sorted_files[i]
-                self._archive_single_file(oldest_file, project)
+            # Архивация по количеству файлов
+            if self.cfg.archive.trigger == "count" and len(log_files) > self.cfg.archive.count:
+                # Сортируем файлы по времени модификации (сначала самые старые)
+                sorted_files = sorted(log_files, key=lambda f: f.stat().st_mtime)
+                
+                # Архивируем лишние файлы (те, что превышают лимит)
+                excess_count = len(log_files) - self.cfg.archive.count
+                for i in range(excess_count):
+                    oldest_file = sorted_files[i]
+                    await self._archive_single_file(oldest_file, project)
 
-        # 2. Архивация по возрасту
-        elif self.cfg.archive.trigger == "age":
-            now = datetime.now(ZoneInfo("UTC"))  # или self.cfg.timezone
-            for log_file in log_files:
-                file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime, tz=ZoneInfo("UTC"))
-                print((now - file_mtime).total_seconds())
-                if (now - file_mtime).total_seconds() > self.cfg.archive.age:
-                    self._archive_single_file(log_file, project)
+            # Архивация по возрасту
+            elif self.cfg.archive.trigger == "age":
+                now = datetime.now(ZoneInfo("UTC"))
+                for log_file in log_files:
+                    file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime, tz=ZoneInfo("UTC"))
+                    if (now - file_mtime).total_seconds() > self.cfg.archive.age:
+                        await self._archive_single_file(log_file, project)
+                        
+            return True
+        except Exception as e:
+            print(f"Ошибка при проверке старых файлов: {e}")
+            return False
                     
-    def _archive_single_file(self, file_path: Path, project: str):
+    async def _archive_single_file(self, file_path: Path, project: str) -> bool:
+        """ Функция для архивации файла
+
+        Arguments:
+            file_path {Path} -- Путь к файлу
+            project {str} -- Имя проекта
+
+        Returns:
+            bool -- Статус архивации
         """
-        Архивирует один файл в ZIP (или другой формат) и перемещает в архив.
-        Имя архива формируется из имени исходного файла: .log -> .zip (или иной тип).
+        
+        try:
+            if not file_path.exists():
+                return False
+
+            # Формируем имя архива: заменяем .log на .zip (или иной тип)
+            archive_name = file_path.with_suffix(f".{self.cfg.archive.type}").name
+            archive_dir = self._archive_dir[project]
+            archive_dir.mkdir(parents=True, exist_ok=True)
+            archive_path = archive_dir / archive_name
+
+            # Архивируем (асинхронно не поддерживается напрямую, но можно в executor)
+            def do_archive():
+                archive_type = self.cfg.archive.type
+                if archive_type == "zip":
+                    with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                        zf.write(file_path, file_path.name)
+                elif archive_type == "gz":
+                    with open(file_path, 'rb') as f_in:
+                        with gzip.open(archive_path, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                elif archive_type == "bz2":
+                    with open(file_path, 'rb') as f_in:
+                        with bz2.open(archive_path, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                elif archive_type == "xz":
+                    with open(file_path, 'rb') as f_in:
+                        with lzma.open(archive_path, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+
+            await asyncio.get_event_loop().run_in_executor(None, do_archive)
+
+            # Удаляем исходный файл
+            file_path.unlink()
+            
+            return True
+        except Exception as e:
+            print(f"Ошибка при архивации файла {file_path}: {e}")
+            return False
+
+    async def close(self, project: str) -> bool:
+        """ Функция для закрытия файла
+
+        Arguments:
+            project {str} -- Имя проекта
+
+        Returns:
+            bool -- Статус закрытия файла
         """
-        if not file_path.exists():
-            return
+        
+        try:
+            if self._active_file_handle.get(project):
+                self._write_end_log(project)
+                self._active_file_handle[project].close()
+                
+            return True
+        except Exception as e:
+            print(f"Ошибка при закрытии файла: {e}")
+            return False
 
-        # Формируем имя архива: заменяем .log на .zip (или иной тип)
-        archive_name = file_path.with_suffix(f".{self.cfg.archive.type}").name
-        archive_dir = self._archive_dir[project] / project
-        archive_dir.mkdir(parents=True, exist_ok=True)
-        archive_path = archive_dir / archive_name
+    async def close_all(self) -> bool:
+        """ Функция для закрытия всех файлов
 
-        # Архивируем
-        archive_type = self.cfg.archive.type
-        if archive_type == "zip":
-            with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.write(file_path, file_path.name)
-        elif archive_type == "gz":
-            with open(file_path, 'rb') as f_in:
-                with gzip.open(archive_path, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out) # type: ignore
-        elif archive_type == "bz2":
-            with open(file_path, 'rb') as f_in:
-                with bz2.open(archive_path, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out) # type: ignore
-        elif archive_type == "xz":
-            with open(file_path, 'rb') as f_in:
-                with lzma.open(archive_path, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-
-        # Удаляем исходный файл
-        file_path.unlink()
-
-
-    def close(self, project):
-        """Закрывает файл и записывает футер"""
-        if self._active_file_handle:
-            self._write_end_log(project)
-            self._active_file_handle[project].close()
+        Returns:
+            bool -- Статус закрытия файлов
+        """
+        
+        try:
+            for project in self._active_file_handle:
+                await self.close(project)
+                
+            return True
+        except Exception as e:
+            print(f"Ошибка при закрытии файлов: {e}")
+            return False
+        

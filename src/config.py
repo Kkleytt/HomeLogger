@@ -20,7 +20,7 @@ class Config:
     def rabbitmq(self):
         return {
             "host": os.getenv("RABBITMQ_HOST", "localhost"),
-            "port": int(os.getenv("RABBITMQ_PORT", "5672")),
+            "port": int(os.getenv("RABBITMQ_PORT", 5672)),
             "username": os.getenv("RABBITMQ_USERNAME", "logger"),
             "password": os.getenv("RABBITMQ_PASSWORD", "logger"),
             "queue": os.getenv("RABBITMQ_QUEUE", "logger")
@@ -31,7 +31,7 @@ class Config:
         return {
             "enabled": os.getenv("TIMESCALEDB_ENABLED", False),
             "host": os.getenv("TIMESCALEDB_HOST", "localhost"),
-            "port": int(os.getenv("TIMESCALEDB_PORT", "5432")),
+            "port": int(os.getenv("TIMESCALEDB_PORT", 5432)),
             "username": os.getenv("TIMESCALEDB_USERNAME", "logger"),
             "password": os.getenv("TIMESCALEDB_PASSWORD", "logger"),
             "database": os.getenv("TIMESCALEDB_DATABASE", "logger")
@@ -46,7 +46,7 @@ class Config:
     @property
     def local_console(self):
         return {
-            "enabled": os.getenv("CONSOLE_ENABLED", "True"),
+            "enabled": os.getenv("CONSOLE_ENABLED", True),
             "format": os.getenv("CONSOLE_FORMAT", "[{project}] [{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
             "project_style": os.getenv("CONSOLE_PROJECT_STYLE", "bold cyan"),
             "timestamp_style": os.getenv("CONSOLE_TIMESTAMP_STYLE", "dim cyan"),
@@ -66,6 +66,35 @@ class Config:
             "time_format": os.getenv("CONSOLE_TIME_FORMAT", "%Y-%m-%d %H:%M:%S"),
             "time_zone": os.getenv("CONSOLE_TIME_ZONE", "UTC")
         }
+    
+    @property
+    def files(self):
+        return {
+            "enabled": os.getenv("FILES_ENABLED", True),
+            "shared_directory": os.getenv("FILES_SHARED_DIRECTORY", "logs"),
+            "project_directory": os.getenv("FILES_PROJECT_DIRECTORY", "{project}"),
+            "filename": os.getenv("FILES_FILENAME", "log_{project}_{date}.log"),
+            "date_file_format": os.getenv("FILES_DATE_FILE_FORMAT", "%Y-%m-%d_%H-%M-%S"),
+            "date_log_format": os.getenv("FILES_DATE_LOG_FORMAT", "%Y-%m-%d %H:%M:%S"),
+            "date_timezone": os.getenv("FILES_DATE_TIMEZONE", "UTC"),
+            "log_format": os.getenv("FILES_LOG_FORMAT", "[{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
+            "rotation": {
+                "trigger": os.getenv("FILES_ROTATION_TRIGGER", "daily"),
+                "time": int(os.getenv("FILES_ROTATION_TIME", 24400)),
+                "daily": os.getenv("FILES_ROTATION_DAILY", "00:00"),
+                "size": int(os.getenv("FILES_ROTATION_SIZE", 10485760)),
+                "lines": int(os.getenv("FILES_ROTATION_LINES", 10000))
+            },
+            "archive": {
+                "enabled": os.getenv("FILES_ARCHIVE_ENABLED", False),
+                "type": os.getenv("FILES_ARCHIVE_TYPE", "zip"),
+                "compression_level": int(os.getenv("FILES_ARCHIVE_COMPRESSION_LEVEL", 6)),
+                "directory": os.getenv("FILES_ARCHIVE_DIRECTORY", "archive"),
+                "trigger": os.getenv("FILES_ARCHIVE_TRIGGER", "count"),
+                "count": int(os.getenv("FILES_ARCHIVE_COUNT", 10)),
+                "age": int(os.getenv("FILES_ARCHIVE_AGE", 244000))
+            }
+        }
 
     
 
@@ -80,7 +109,8 @@ class Config:
             "rabbitmq": self.rabbitmq,
             "timescaledb": self.timescaledb,
             "logger": self.logger,
-            "console": self.local_console
+            "console": self.local_console,
+            "files": self.files
         }
 
 
