@@ -1,16 +1,16 @@
-# app/src/consumer/consumer.py
+# app/server/consumer/consumer.py
 # Модуль для получения данных из очереди RabbitMQ и перенаправления их в дочерние модули
 
 import asyncio                  # Асинхронный запуск функций
 import json                     # Работа с JSON строками
 import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
-from src.rabbitmq.message_validation import validate_message
-from src.modules.write_to_database import Writer as DatabaseWriter
-from src.modules.write_to_console import Writer as ConsoleWriter
-from src.modules.write_to_files import Writer as FilesWriter
-from src.models.config_models import ServerConfig
-from src.config import CurrentConfig as cfg
+from server.rabbitmq.message_validation import validate_message
+from server.modules.write_to_database import Writer as DatabaseWriter
+from server.modules.write_to_console import Writer as ConsoleWriter
+from server.modules.write_to_files import Writer as FilesWriter
+from server.models.config_models import ServerConfig
+from server.config import CurrentConfig as cfg
 
 
 GlobalConfig: ServerConfig

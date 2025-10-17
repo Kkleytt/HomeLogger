@@ -1,9 +1,9 @@
-# app/src/modules/write_to_database.py
+# app/server/modules/write_to_database.py
 # Модуль для записи логов в базу данных
 
-from src.databases.postgres_client import LogClient
-from src.models.config_models import ServerConfig
-from src.models.database_models import generate_log_model
+from server.databases.postgres_client import LogClient
+from server.models.config_models import ServerConfig
+from server.models.database_models import generate_log_model
 from datetime import datetime
 
 database_models = {}

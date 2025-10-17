@@ -1,7 +1,7 @@
-# app/src/wiki/wiki_config.py
+# app/server/wiki/wiki_config.py
 # Модуль с описанием как работать с конфигурацией проекта
 
-from src.config import CurrentConfig as cfg
+from server.config import CurrentConfig as cfg
 
 def random_function(host, port, username, password, queue):
     print(f"Параметры функции: {host}, {port}, {username}, {password}, {queue}")
@@ -22,10 +22,10 @@ def main():
     print(cfg.rabbitmq['host'])
     
     # Пример получения параметров из другого окружения
-    from src.config import TestConfig
+    from server.config import TestConfig
     print(TestConfig.rabbitmq['host'])
     
-    from src.config import ProductionConfig
+    from server.config import ProductionConfig
     print(ProductionConfig.rabbitmq['host'])
     
     # Пример передачи раскрывающегося списка параметров

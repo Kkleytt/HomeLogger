@@ -1,18 +1,13 @@
-# app/src/run.py
+# app/server/run.py
 # Модуль для запуска проекта
 
 import asyncio
 
-from src.rabbitmq.consumer import run_consumer
-from src.config import CurrentConfig as cfg
+from server.rabbitmq.consumer import run_consumer
+from server.config import CurrentConfig as cfg
 
 
 async def main():
-    config = {
-        
-    }
-    
-    # Запуск consumer
     await run_consumer(**cfg.rabbitmq)
     
 

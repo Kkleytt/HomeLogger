@@ -1,20 +1,24 @@
-import os
+# app/server/modules/write_to_files.py
+# Класс для записи логов в файлы
+
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from pathlib import Path
+from typing import Optional, Literal, Dict
 import shutil
 import asyncio
-import aiofiles
 import zipfile
-import tarfile
 import gzip
 import bz2
 import lzma
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
-from typing import Optional, Literal, Dict
+from typing import Optional, Dict
 import io
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from src.models.config_models import ServerConfig
+from server.models.config_models import ServerConfig
 
 class FileData(BaseModel):
     path: Optional[Path] = None

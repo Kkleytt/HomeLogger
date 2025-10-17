@@ -1,3 +1,6 @@
+# app/server/models/config_models.py
+# Класс для валидации настроек сервера
+
 from pydantic import BaseModel, Field, IPvAnyAddress
 from typing import Optional, Union, Literal
 from zoneinfo import ZoneInfo

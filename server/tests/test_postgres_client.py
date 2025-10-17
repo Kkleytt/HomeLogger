@@ -1,4 +1,4 @@
-# app/src/tests/test_postgres_client.py
+# app/server/tests/test_postgres_client.py
 # Модуль для тестирования клиента базы данных
 
 import pytest
@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 
-from src.databases.postgres_client import Client 
-from src.config import CurrentConfig as cfg
-from src.models.config_models import ServerConfig
+from server.databases.postgres_client import Client 
+from server.config import CurrentConfig as cfg
+from server.models.config_models import ServerConfig
 
 
 Base = declarative_base()

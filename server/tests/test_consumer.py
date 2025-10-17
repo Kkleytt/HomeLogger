@@ -1,4 +1,4 @@
-# app/src/tests/test_consumer.py
+# app/server/tests/test_consumer.py
 # Модуль для отправки сообщений в очередь RabbitMQ
 
 import asyncio
@@ -6,8 +6,8 @@ import json
 from datetime import datetime, timezone
 from aio_pika import connect_robust, Message # type: ignore
 
-from src.config import CurrentConfig as config
-from src.models.config_models import LibraryConfig
+from server.config import CurrentConfig as config
+from server.models.config_models import LibraryConfig
 
 message_body = {"project": "home_logger", "timestamp": "2023-10-15T12:34:56Z", "level": "info", "module": "auth", "function": "login", "message": "User logged in successfully.", "code": 123}
 

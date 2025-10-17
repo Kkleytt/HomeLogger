@@ -1,4 +1,4 @@
-# app/src/consumer/message_validation.py
+# app/server/consumer/message_validation.py
 # Модуль для валидации данных взятых из очереди logs в RabbitMQ
 
 from datetime import datetime

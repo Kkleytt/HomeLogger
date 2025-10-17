@@ -1,13 +1,13 @@
-# app/src/wiki/postgres_client.py
+# app/server/wiki/postgres_client.py
 # Модуль с описанием как работать с базой данных
 
 import asyncio
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 
-from src.databases.postgres_client import Client as SqlClient
-from src.config import CurrentConfig as cfg
-from src.models.config_models import ServerConfig
+from server.databases.postgres_client import Client as SqlClient
+from server.config import CurrentConfig as cfg
+from server.models.config_models import ServerConfig
 
 
 class TestModel(declarative_base()):

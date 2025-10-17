@@ -1,8 +1,8 @@
-# app/src/wiki/wiki_library.py
+# app/server/wiki/wiki_library.py
 # Модуль с описанием функций для работы с библиотекой
 
 import asyncio
-from src.lib.home_logger import init_logger, get_logger, LoggerConfig
+from server.lib.home_logger import init_logger, get_logger, LoggerConfig
 
 # Пример использования
 async def test_hui():

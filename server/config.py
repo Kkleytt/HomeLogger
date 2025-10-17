@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 
 class Config:
-    def __init__(self, environment: str = "test", folder_environments: str = ".env"):
+    def __init__(self, environment: str = ".env.test", folder_environments: str = ".env"):
         """ Функция для загрузки переменных окружения
 
         Keyword Arguments:
@@ -14,10 +14,16 @@ class Config:
             folder_environments {str} -- Имя папки с переменными окружения (default: {".env"})
         """
         
-        load_dotenv(dotenv_path=Path(__file__).parent / folder_environments / f".env.{environment}")
+        load_dotenv(dotenv_path=Path(__file__).parent / folder_environments / environment)
 
     @property
-    def rabbitmq(self):
+    def rabbitmq(self) -> dict:
+        """ Функция для получения словаря с конфигурациями для подключения к RabbitMQ
+
+        Returns:
+            dict -- Словарь с конфигурациями для подключения к RabbitMQ
+        """
+        
         return {
             "host": os.getenv("RABBITMQ_HOST", "localhost"),
             "port": int(os.getenv("RABBITMQ_PORT", 5672)),
@@ -27,7 +33,13 @@ class Config:
         }
         
     @property
-    def timescaledb(self):
+    def timescaledb(self) -> dict:
+        """ Функция для получения словаря с конфигурациями для подключения к TimescaleDB
+
+        Returns:
+            dict -- Словарь с конфигурациями для подключения к TimescaleDB
+        """
+        
         return {
             "enabled": os.getenv("TIMESCALEDB_ENABLED", False),
             "host": os.getenv("TIMESCALEDB_HOST", "localhost"),
@@ -38,13 +50,25 @@ class Config:
         }
         
     @property
-    def logger(self):
+    def logger(self) -> dict:
+        """ Функция для получения словаря с конфигурациями логирования
+
+        Returns:
+            dict -- Словарь с конфигурациями логирования для библиотеки
+        """
+        
         return {
             "project_name": os.getenv("PROJECT_NAME", "DefaultProject"),
         }
         
     @property
-    def local_console(self):
+    def local_console(self) -> dict:
+        """ Функция для получения словаря с конфигурациями консольного логирования
+
+        Returns:
+            dict -- Словарь с конфигурациями консольного логирования
+        """
+        
         return {
             "enabled": os.getenv("CONSOLE_ENABLED", True),
             "format": os.getenv("CONSOLE_FORMAT", "[{project}] [{timestamp}] [{level}] {module}.{function}: {message} [{code}]"),
@@ -68,7 +92,13 @@ class Config:
         }
     
     @property
-    def files(self):
+    def files(self) -> dict:
+        """ Функция для получения словаря с конфигурациями файлового логирования
+
+        Returns:
+            dict -- Словарь с конфигурациями файлового логирования
+        """
+        
         return {
             "enabled": os.getenv("FILES_ENABLED", True),
             "shared_directory": os.getenv("FILES_SHARED_DIRECTORY", "logs"),
@@ -113,7 +143,7 @@ class Config:
             "files": self.files
         }
 
-
-TestConfig = Config("test")         # Конфигурация для тестов
-ProductionConfig = Config("prod")   # Конфигурация для продакшена
-CurrentConfig = TestConfig          # Текущая конфигурация
+TestConfig = Config(".env.test")            # Конфигурация для тестов
+ProductionConfig = Config(".env.prod")      # Конфигурация для продакшена
+ExampleConfig = Config(".env.example")      # Конфигурация для примера
+CurrentConfig = TestConfig                  # Текущая конфигурация

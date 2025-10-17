@@ -1,4 +1,4 @@
-# app/src/databases/postgres_client.py
+# app/server/databases/postgres_client.py
 # Модуль для работы с PostgreSQL / TimeScaleDB
 
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
-from src.models.config_models import ServerConfig
+from server.models.config_models import ServerConfig
 
 
 class Client:
