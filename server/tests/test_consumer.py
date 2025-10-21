@@ -6,23 +6,23 @@ import json
 from datetime import datetime, timezone
 from aio_pika import connect_robust, Message # type: ignore
 
-from server.config.config import CurrentConfig as config
+from server.config.config import ConfigManager as cfg
 from server.config.schema import LibraryConfig
 
 message_body = {"project": "home_logger", "timestamp": "2023-10-15T12:34:56Z", "level": "info", "module": "auth", "function": "login", "message": "User logged in successfully.", "code": 123}
 
-async def generate_url(config: LibraryConfig.Rabbit) -> str | None:
-    if config.host and config.port and config.username and config.password:
-        return f"amqp://{config.username}:{config.password}@{config.host}:{config.port}/"
+async def generate_url(cfg: LibraryConfig.Rabbit) -> str | None:
+    if cfg.host and cfg.port and cfg.username and cfg.password:
+        return f"amqp://{cfg.username}:{cfg.password}@{cfg.host}:{cfg.port}/"
     else:
         return None
 
 
-async def send_messages(config: LibraryConfig.Rabbit, interval_seconds: int):
-    connection = await connect_robust(await generate_url(config))
+async def send_messages(cfg: LibraryConfig.Rabbit, interval_seconds: int):
+    connection = await connect_robust(await generate_url(cfg))
     async with connection:
         channel = await connection.channel()
-        queue = await channel.declare_queue(config.queue, durable=True, arguments={"x-message-ttl": 30000})
+        queue = await channel.declare_queue(cfg.queue, durable=True, arguments={"x-message-ttl": 30000})
 
         while True:
             current_time = str(datetime.now(timezone.utc))
@@ -39,7 +39,7 @@ async def send_messages(config: LibraryConfig.Rabbit, interval_seconds: int):
 if __name__ == '__main__':
     try:
         print('start')
-        asyncio.run(send_messages(LibraryConfig.Rabbit(**config.rabbitmq), 10))  # Отправляем сообщения каждые 10 секунд
+        asyncio.run(send_messages(LibraryConfig.Rabbit(*cfg.config.rabbitmq), 10))  # Отправляем сообщения каждые 10 секунд
     except Exception as ex:
         print(ex)
     finally:

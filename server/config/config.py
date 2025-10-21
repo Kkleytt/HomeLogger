@@ -11,13 +11,15 @@ from typing import List, Callable, Dict, Any
 
 from server.config.schema import ServerConfig
 
+GlobalEnvironment = "test"
+
 
 class Manager:
     def __init__(self, initial_config: ServerConfig):
         """
         Инициализирует ConfigManager с начальной конфигурацией.
         """
-        self.config_file_path = Path(__file__).parent / "config.json"
+        self.config_file_path = Path(__file__).parent / f"config.{GlobalEnvironment}.json"
         self._config: ServerConfig = initial_config
         self._callbacks: List[Callable[[ServerConfig], None]] = []
         self._lock = asyncio.Lock()  # Для thread-safe обновлений (в asyncio контексте)
@@ -108,7 +110,7 @@ class Manager:
 
 
 class Config:
-    def __init__(self, environment: str = ".env.test", folder_environments: str = ".env"):
+    def __init__(self, folder_environments: str = ".env"):
         """ Функция для загрузки переменных окружения
 
         Keyword Arguments:
@@ -116,12 +118,12 @@ class Config:
             folder_environments {str} -- Имя папки с переменными окружения (default: {".env"})
         """
         
-        self.environment = environment
+        self.environment = f".env.{GlobalEnvironment}"
         self.folder_environments = folder_environments
         self._config_file_path = Path(__file__).parent / "config.json"
 
         # Загружаем .env файл
-        load_dotenv(dotenv_path=Path(__file__).parent.parent / folder_environments / environment)
+        load_dotenv(dotenv_path=Path(__file__).parent.parent / folder_environments / GlobalEnvironment)
 
         # Загружаем конфигурацию
         self._config_dict = self._load_config()
@@ -172,7 +174,7 @@ class Config:
         }
         
     @property
-    def local_console(self) -> dict:
+    def console(self) -> dict:
         """ Функция для получения словаря с конфигурациями консольного логирования
 
         Returns:
@@ -296,10 +298,9 @@ class Config:
         
         return raw_config
 
-TestConfig = Config(".env.test")            # Конфигурация для тестов
-ProductionConfig = Config(".env.prod")      # Конфигурация для продакшена
-ExampleConfig = Config(".env.example")      # Конфигурация для примера
-CurrentConfig = TestConfig                  # Текущая конфигурация (Изменять под разные окружения)
+TestConfig = Config("test")            # Конфигурация для тестов
+ProductionConfig = Config("prod")      # Конфигурация для продакшена
+ExampleConfig = Config("example")      # Конфигурация для примера
 
 
-ConfigManager = Manager(ServerConfig(**CurrentConfig._get_all_config())) # Менеджер конфигураций
+ConfigManager = Manager(ServerConfig(**Config(GlobalEnvironment)._get_all_config())) # Менеджер конфигураций

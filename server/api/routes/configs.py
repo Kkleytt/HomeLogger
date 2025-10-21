@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError
 
-
-
 from server.config.schema import ServerConfig
 from server.config.config import ConfigManager as cfg
 

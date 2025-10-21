@@ -58,7 +58,7 @@ class Writer:
             bool -- Статус создания директорий
         """
         try:
-            self._log_dir[project] = Path(self.cfg.share_directory) / self.cfg.project_directory.format(project=project)
+            self._log_dir[project] = Path(self.cfg.shared_directory) / self.cfg.project_directory.format(project=project)
             self._log_dir[project].mkdir(parents=True, exist_ok=True)
             self._archive_dir[project] = self._log_dir[project] / self.cfg.archive.directory
             self._archive_dir[project].mkdir(parents=True, exist_ok=True)

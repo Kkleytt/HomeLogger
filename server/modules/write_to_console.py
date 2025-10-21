@@ -1,6 +1,7 @@
 from rich.console import Console
 from rich.text import Text
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import re
 
 from server.config.schema import ServerConfig
@@ -22,7 +23,7 @@ class Writer:
         
         # Преобразуем строку в datetime, если нужно
         dt = datetime.fromisoformat(message["timestamp"])
-        dt = dt.astimezone(self.config.time_zone)        
+        dt = dt.astimezone(ZoneInfo(self.config.time_zone))        
         ts_str = dt.strftime(self.config.time_format)
         
         data = {

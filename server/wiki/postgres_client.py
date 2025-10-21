@@ -6,7 +6,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 
 from server.databases.postgres_client import Client as SqlClient
-from server.config.config import CurrentConfig as cfg
+from server.config.config import ConfigManager as cfg
 from server.config.schema import ServerConfig
 
 
@@ -19,7 +19,7 @@ class TestModel(declarative_base()):
 async def main():
     
     #### Подключение к базе данных
-    sql = SqlClient(ServerConfig.TimescaleDB(**cfg.timescaledb))
+    sql = SqlClient(ServerConfig.TimescaleDB(*cfg.config.timescaledb))
     a = await sql.connect()
     print(f"Подключение к базе данных: {a}")
     

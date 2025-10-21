@@ -10,7 +10,7 @@ from server.modules.write_to_database import Writer as DatabaseWriter
 from server.modules.write_to_console import Writer as ConsoleWriter
 from server.modules.write_to_files import Writer as FilesWriter
 from server.config.schema import ServerConfig
-from server.config.config import CurrentConfig as cfg
+from server.config.config import ConfigManager as cfg
 
 
 GlobalConfig: ServerConfig
@@ -103,8 +103,8 @@ async def run_consumer(config: ServerConfig):
 # Пример использования    
 if __name__ == "__main__":
     config = {
-        "rabbitmq": cfg.rabbitmq,
-        "console": cfg.local_console,
-        "timescaledb": cfg.timescaledb
+        "rabbitmq": cfg.config.rabbitmq,
+        "console": cfg.config.console,
+        "timescaledb": cfg.config.timescaledb
     }
     asyncio.run(run_consumer(ServerConfig(**config))) # type: ignore
