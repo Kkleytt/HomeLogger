@@ -3,7 +3,7 @@ from rich.text import Text
 from datetime import datetime
 import re
 
-from server.models.config_models import ServerConfig
+from server.config.schema import ServerConfig
 
 class Writer:
     def __init__(self, config: ServerConfig.Console):

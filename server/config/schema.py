@@ -42,6 +42,9 @@ class ServerConfig(BaseModel):
         password: Optional[str] = Field(default="guest", description="Пароль для подключения к RabbitMQ")
         queue: Optional[str] = Field(default="logs", description="Очередь для получения логов в RabbitMQ")
     
+    class Logger(BaseModel):
+        project_name: str = Field(default="DefaultProject", description="Имя проекта для логирования")
+    
     class Console(BaseModel):
         """ Класс для валидации настроек логирования в консоль
 
@@ -76,7 +79,7 @@ class ServerConfig(BaseModel):
         code_style: str = Field(default="dim", description="Rich стили для вывода кода лога-записи")
         
         time_format: str = Field(default="%Y-%m-%d %H:%M:%S", description="Формат даты и времени при выводе в консоль")
-        time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("UTC"), description="Часовой пояс для форматирования времени")
+        time_zone: str = Field(default="UTC", description="Часовой пояс для форматирования времени")
         
     class Files(BaseModel):
         """ Класс для валидации настроек логирования в файлы
@@ -117,7 +120,7 @@ class ServerConfig(BaseModel):
             
         enabled: bool = Field(default=True, description="Статус активации логирования в файлы")
         
-        share_directory: str = Field(default="logs", description="Общая директория для хранения лог-файлов")
+        shared_directory: str = Field(default="logs", description="Общая директория для хранения лог-файлов")
         project_directory: str = Field(default="{project}", description="Паттерн для имени директории проекта")
         filename: str = Field(default="log_{project}_{date}.log", description="Паттерн имени файла")
         date_file_format: str = Field(default="%Y-%m-%d_%H-%M-%S", description="Формат даты в имени файла")
@@ -130,6 +133,7 @@ class ServerConfig(BaseModel):
     
     rabbitmq: RabbitMQ = Field(default_factory=RabbitMQ, description="Настройки для подключения к RabbitMQ")
     timescaledb: TimescaleDB = Field(default_factory=TimescaleDB, description="Настройки для подключения к TimescaleDB")
+    logger: Logger = Field(default_factory=Logger, description="Общие настройки логирования")
     console: Console = Field(default_factory=Console, description="Настройки для вывода логов в консоль")
     files: Files = Field(default_factory=Files, description="Настройки для логирования в файлы")
     
@@ -192,7 +196,7 @@ class LibraryConfig(BaseModel):
         code_style: str = Field(default="dim", description="Rich стиль для вывода кода ошибки")
         
         time_format: str = Field(default="%Y-%m-%d %H:%M:%S", description="Формат даты и времени в лог-записях")
-        time_zone: ZoneInfo = Field(default_factory=lambda: ZoneInfo("UTC"), description="Часовой пояс для даты в формате ISO 8601")
+        time_zone: str = Field(default="UTC", description="Часовой пояс для даты в формате ISO 8601")
     
     project_name: str = Field(default="DefaultProject", description="Имя проекта для логирования")
     rabbitmq: Rabbit = Field(default_factory=Rabbit, description="Настройки для подключения к RabbitMQ")

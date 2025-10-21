@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 
-from server.models.config_models import ServerConfig
+from server.config.schema import ServerConfig
 
 
 class Client:

@@ -1,4 +1,4 @@
-Полное описание проекта, его модулей, функций и классов
+# Полное описание проекта, его модулей, функций и классов
 
 Структура проекта в призме микро-сервисов: - RabbitMQ - Connector to Database [В РАЗРАБОТКЕ] - Connector to Files - Connector to Console [СЛЕДУЮЩИЙ] - Telegram Notifier - FastAPI - Main - DockerFile - .env - config.py
 

@@ -2,7 +2,7 @@
 # Модуль с описанием функций для работы с библиотекой
 
 import asyncio
-from server.lib.home_logger import init_logger, get_logger, LoggerConfig
+from lib.home_logger import init_logger, get_logger, LoggerConfig
 
 # Пример использования
 async def test_hui():

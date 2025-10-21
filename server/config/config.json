@@ -1,0 +1,67 @@
+{
+  "rabbitmq": {
+    "host": "46.160.250.162",
+    "port": 2201,
+    "username": "logger",
+    "password": "logger",
+    "queue": "logger"
+  },
+  "timescaledb": {
+    "enabled": true,
+    "host": "localhost",
+    "port": 2200,
+    "username": "logger",
+    "password": "logger",
+    "database": "logger"
+  },
+  "logger": {
+    "project_name": "HomeLogger"
+  },
+  "console": {
+    "enabled": true,
+    "format": "[{project}] [{timestamp}] [{level}] {module}.{function}: {message} [{code}]",
+    "project_style": "bold cyan",
+    "timestamp_style": "dim cyan",
+    "level_styles": {
+      "info": "bold magenta",
+      "warning": "bold yellow",
+      "error": "bold red",
+      "fatal": "bold white on red",
+      "debug": "dim cyan",
+      "alert": "bold magenta",
+      "unknown": ""
+    },
+    "module_style": "green",
+    "function_style": "magenta",
+    "message_style": "",
+    "code_style": "dim",
+    "time_format": "%Y-%m-%d %H:%M:%S",
+    "time_zone": "Europe/Moscow"
+  },
+  "files": {
+    "enabled": true,
+    "shared_directory": "logs",
+    "project_directory": "{project}",
+    "filename": "log_{project}_{date}.log",
+    "date_file_format": "%Y-%m-%d_%H-%M-%S",
+    "date_log_format": "%Y-%m-%d %H:%M:%S",
+    "date_timezone": "UTC",
+    "log_format": "[{timestamp}] [{level}] {module}.{function}: {message} [{code}]",
+    "rotation": {
+      "trigger": "daily",
+      "time": 24400,
+      "daily": "00:00",
+      "size": 10485760,
+      "lines": 10000
+    },
+    "archive": {
+      "enabled": false,
+      "type": "zip",
+      "compression_level": 6,
+      "directory": "archive",
+      "trigger": "count",
+      "count": 10,
+      "age": 244000
+    }
+  }
+}

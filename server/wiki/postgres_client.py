@@ -6,8 +6,8 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 
 from server.databases.postgres_client import Client as SqlClient
-from server.config import CurrentConfig as cfg
-from server.models.config_models import ServerConfig
+from server.config.config import CurrentConfig as cfg
+from server.config.schema import ServerConfig
 
 
 class TestModel(declarative_base()):

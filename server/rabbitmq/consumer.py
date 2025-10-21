@@ -5,12 +5,12 @@ import asyncio                  # Асинхронный запуск функц
 import json                     # Работа с JSON строками
 import aio_pika                 # Асинхронный движок для работы с RabbitMQ
 
-from server.rabbitmq.message_validation import validate_message
+from server.rabbitmq.validation import validate_message
 from server.modules.write_to_database import Writer as DatabaseWriter
 from server.modules.write_to_console import Writer as ConsoleWriter
 from server.modules.write_to_files import Writer as FilesWriter
-from server.models.config_models import ServerConfig
-from server.config import CurrentConfig as cfg
+from server.config.schema import ServerConfig
+from server.config.config import CurrentConfig as cfg
 
 
 GlobalConfig: ServerConfig

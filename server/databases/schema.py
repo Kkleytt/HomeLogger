@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
-def generate_log_model(table_name: str = "unknown"):
+def generate_log_schema(table_name: str = "unknown"):
     """ Функция для генерации SqlAlchemy модели таблицы логов
 
     Arguments:
@@ -55,5 +55,5 @@ def generate_log_model(table_name: str = "unknown"):
 
 # Пример использования
 if __name__ == "__main__":
-    AirborneModel = generate_log_model("airborne")
+    AirborneModel = generate_log_schema("airborne")
     print(AirborneModel)

@@ -18,7 +18,7 @@ from typing import Optional, Dict
 import io
 from pydantic import BaseModel
 
-from server.models.config_models import ServerConfig
+from server.config.schema import ServerConfig
 
 class FileData(BaseModel):
     path: Optional[Path] = None
