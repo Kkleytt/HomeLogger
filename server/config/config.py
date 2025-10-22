@@ -16,38 +16,59 @@ GlobalEnvironment = "test"
 
 class Manager:
     def __init__(self, initial_config: ServerConfig):
+        """ Класс для работы с конфигурацией
+
+        Arguments:
+            initial_config {ServerConfig} -- Первоначальная конфигурация
         """
-        Инициализирует ConfigManager с начальной конфигурацией.
-        """
-        self.config_file_path = Path(__file__).parent / f"config.{GlobalEnvironment}.json"
+        
+        self._config_file_path = Path(__file__).parent / f"config.{GlobalEnvironment}.json"
         self._config: ServerConfig = initial_config
         self._callbacks: List[Callable[[ServerConfig], None]] = []
         self._lock = asyncio.Lock()  # Для thread-safe обновлений (в asyncio контексте)
 
     @property
     def config(self) -> ServerConfig:
+        """ Функция для получения текущей конфигурации
+
+        Returns:
+            ServerConfig -- Актуальная конфигурация
         """
-        Возвращает текущую конфигурацию.
-        """
+        
         return self._config
 
-    def subscribe(self, callback: Callable[[ServerConfig], None]):
+    def subscribe(self, callback: Callable[[ServerConfig], None]) -> None:
+        """ Функция для подписки на события
+
+        Arguments:
+            callback {Callable[[ServerConfig], None]} -- Функция обработчик события
         """
-        Подписывает функцию/метод на изменения конфигурации.
-        """
+        
         self._callbacks.append(callback)
 
-    def unsubscribe(self, callback: Callable[[ServerConfig], None]):
+    def unsubscribe(self, callback: Callable[[ServerConfig], None]) -> None:
+        """ Функция для отписки от событий
+
+        Arguments:
+            callback {Callable[[ServerConfig], None]} -- Функция обработчик события
         """
-        Отписывает функцию/метод от изменений конфигурации.
-        """
+        
         if callback in self._callbacks:
             self._callbacks.remove(callback)
 
     async def update_config(self, new_config_data: dict) -> ServerConfig:
+        """ Функция для обновления конфигурации по входным данным
+
+        Arguments:
+            new_config_data {dict} -- Новая конфигурация
+
+        Raises:
+            ValueError: Ошибка валидации новой конфигурации
+
+        Returns:
+            ServerConfig -- Новая конфигурация
         """
-        Обновляет конфигурацию, валидирует её и уведомляет подписчиков.
-        """
+        
         async with self._lock:
             try:
                 # Валидируем новые данные и создаём новую модель
@@ -69,10 +90,19 @@ class Manager:
                 print(f"❌ Ошибка валидации новой конфигурации: {e}")
                 raise ValueError(f"Invalid configuration data: {e}")
 
-    async def reload_from_source(self, source_loader_func):
+    async def reload_from_source(self, source_loader_func) -> ServerConfig:
+        """ Функция для перезагрузки конфигурации из источника
+
+        Arguments:
+            source_loader_func {_type_} -- Функция для загрузки конфигурации из источника
+
+        Raises:
+            ValueError: Ошибка валидации перезагруженной конфигурации
+
+        Returns:
+            ServerConfig -- JSON конфигурация
         """
-        (Опционально) Перезагружает конфигурацию из внешнего источника (например, файла, БД).
-        """
+        
         async with self._lock:
             try:
                 raw_data = source_loader_func()
@@ -101,7 +131,7 @@ class Manager:
         """
         
         try:
-            with open(self.config_file_path, 'w', encoding='utf-8') as f:
+            with open(self._config_file_path, 'w', encoding='utf-8') as f:
                 json.dump(config_dict, f, indent=2, ensure_ascii=False)
                 
             return True
@@ -110,12 +140,21 @@ class Manager:
             return False
         
     async def refresh(self) -> bool:
+        """ Функция для обновления конфигурации
+
+        Returns:
+            bool -- Статус обновления
+        """
+        
         try:
-            with open(self.config_file_path, 'r', encoding='utf-8') as f:
-                raw_config = json.load(f)
-            self._config = ServerConfig(**raw_config)
+            if self._config_file_path.exists():
+                with open(self._config_file_path, 'r', encoding='utf-8') as f:
+                    raw_config = json.load(f)
+                self._config = ServerConfig(**raw_config)
             
-            return True
+                return True
+            else:
+                return False  
         except ValidationError as e:
             print(f"Error in refresh config - ValidationError: {e}")
             return False
