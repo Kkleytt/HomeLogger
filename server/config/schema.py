@@ -23,12 +23,12 @@ class ServerConfig(BaseModel):
         enabled: bool = Field(default=True, description="Статус активации логирования в TimescaleDB")
         
         host: Union[IPvAnyAddress, Literal["localhost"]] = Field(default="localhost", description="Ip адрес или имя хоста для подключения к TimescaleDB")
-        port: Optional[int] = Field(ge=1, le=65535, default=5432, description="Порт для подключения к TimescaleDB")
-        username: Optional[str] = Field(default="logger", description="Имя пользователя для подключения к TimescaleDB")
-        password: Optional[str] = Field(default="logger", description="Пароль для подключения к TimescaleDB")
-        database: Optional[str] = Field(default="logger", description="База данных для подключения к TimescaleDB")
+        port: int = Field(ge=1, le=65535, default=5432, description="Порт для подключения к TimescaleDB")
+        username: str = Field(default="logger", description="Имя пользователя для подключения к TimescaleDB")
+        password: str = Field(default="logger", description="Пароль для подключения к TimescaleDB")
+        database: str = Field(default="logger", description="База данных для подключения к TimescaleDB")
 
-    class RabbitMQ(BaseModel):
+    class RabbitMq(BaseModel):
         """ Класс для валидации настроек подключения в RabbitMQ
 
         Arguments:
@@ -36,10 +36,10 @@ class ServerConfig(BaseModel):
         """
         
         host: Union[IPvAnyAddress, Literal["localhost"]] = Field(default="localhost", description="Ip адрес или имя хоста для подключения к RabbitMQ")
-        port: Optional[int] = Field(ge=1, le=65535, default=5672, description="Порт для подключения к RabbitMQ")
-        username: Optional[str] = Field(default="guest", description="Имя пользователя для подключения к RabbitMQ")
-        password: Optional[str] = Field(default="guest", description="Пароль для подключения к RabbitMQ")
-        queue: Optional[str] = Field(default="logs", description="Очередь для получения логов в RabbitMQ")
+        port: int = Field(ge=1, le=65535, default=5672, description="Порт для подключения к RabbitMQ")
+        username: str = Field(default="guest", description="Имя пользователя для подключения к RabbitMQ")
+        password: str = Field(default="guest", description="Пароль для подключения к RabbitMQ")
+        queue: str = Field(default="logs", description="Очередь для получения логов в RabbitMQ")
     
     class Logger(BaseModel):
         project_name: str = Field(default="DefaultProject", description="Имя проекта для логирования")
@@ -130,11 +130,61 @@ class ServerConfig(BaseModel):
         rotation: Rotation = Field(default_factory=Rotation, description="Настройки смены файла для логирования записей")
         archive: Archive = Field(default_factory=Archive, description="Настройки архивации старых лог-файлов")
     
-    rabbitmq: RabbitMQ = Field(default_factory=RabbitMQ, description="Настройки для подключения к RabbitMQ")
+    class Api(BaseModel):
+        """ Функция для валидации настроек API
+
+        Arguments:
+            BaseModel {_type_} -- Базовый класс для валидации данных
+        """
+        
+        class RabbitMq(BaseModel):
+            """ Класс для валидации настроек подключения к RabbitMQ
+
+            Arguments:
+                BaseModel {_type_} -- Базовый класс для валидации данных
+            """
+            
+            host: Union[IPvAnyAddress, Literal["localhost"]] = Field(default="localhost", description="Ip адрес или имя хоста для подключения к RabbitMQ")
+            port: int = Field(ge=1, le=65535, default=5672, description="Порт для подключения к RabbitMQ")
+            username: str = Field(default="guest", description="Имя пользователя для подключения к RabbitMQ")
+            password: str = Field(default="guest", description="Пароль для подключения к RabbitMQ")
+            
+        class Routers(BaseModel):
+            """ Класс для валидации настроек ручки для получения логов
+
+            Arguments:
+                BaseModel {_type_} -- Базовый класс для валидации данных
+            """
+                
+            logs: bool = Field(default=False, description="Статус активации ручки для получения логов")
+            config: bool = Field(default=False, description="Статус активации ручки для работы с конфигурацией проекта")
+            health: bool = Field(default=True, description="Статус активации ручки для проверки работоспособности проекта")
+        
+        class Auth(BaseModel):
+            """ Класс для валидации настроек аутентификации запросов
+
+            Arguments:
+                BaseModel {_type_} -- Базовый класс для валидации данных
+            """
+            
+            enabled: bool = Field(default=False, description="Статус активации аутентификации запросов")
+            secret: str = Field(default="secret", description="Секрет для аутентификации запросов")
+        
+        enabled: bool = Field(default=False, description="Статус активации получения логов через API")
+        host: Union[IPvAnyAddress, Literal["localhost"]] = Field(default="localhost", description="Ip адрес или имя хоста для запуска API")
+        port: int = Field(ge=1, le=65535, default=8000, description="Порт для запуска API")
+        rabbitmq: RabbitMq = Field(default_factory=RabbitMq, description="Настройки для отправки служебных сообщений через RabbitMq")
+        routers: Routers = Field(default_factory=Routers, description="Настройки путей API")
+        auth: Auth = Field(default_factory=Auth, description="Настройки аутентификации запросов")
+        
+        
+    
+    rabbitmq: RabbitMq = Field(default_factory=RabbitMq, description="Настройки для подключения к RabbitMQ")
     timescaledb: TimescaleDB = Field(default_factory=TimescaleDB, description="Настройки для подключения к TimescaleDB")
     logger: Logger = Field(default_factory=Logger, description="Общие настройки логирования")
     console: Console = Field(default_factory=Console, description="Настройки для вывода логов в консоль")
     files: Files = Field(default_factory=Files, description="Настройки для логирования в файлы")
+    api: Api = Field(default_factory=Api, description="Настройки для модуля REST-full API")
     
     class Config:
         extra = "forbid"

@@ -58,6 +58,7 @@ class Manager:
                 # Уведомляем всех подписчиков ТОЛЬКО если конфиг изменился
                 if old_config != self._config:
                     for callback in self._callbacks:
+                        print('Send callback')
                         callback(self._config)
                         
                 # Сохраняем конфигурацию в файл
@@ -107,10 +108,24 @@ class Manager:
         except Exception as e:
             print(f"Error save config to json file: {e}")
             return False
+        
+    async def refresh(self) -> bool:
+        try:
+            with open(self.config_file_path, 'r', encoding='utf-8') as f:
+                raw_config = json.load(f)
+            self._config = ServerConfig(**raw_config)
+            
+            return True
+        except ValidationError as e:
+            print(f"Error in refresh config - ValidationError: {e}")
+            return False
+        except Exception as e:
+            print(f"Error in refresh config: {e}")
+            return False
 
 
 class Config:
-    def __init__(self, folder_environments: str = ".env"):
+    def __init__(self, environments: str = "test", folder_environments: str = ".env"):
         """ Функция для загрузки переменных окружения
 
         Keyword Arguments:
@@ -118,12 +133,13 @@ class Config:
             folder_environments {str} -- Имя папки с переменными окружения (default: {".env"})
         """
         
-        self.environment = f".env.{GlobalEnvironment}"
+        self.environment = f".env.{environments}"
         self.folder_environments = folder_environments
-        self._config_file_path = Path(__file__).parent / "config.json"
+        self._config_file_path = Path(__file__).parent / f"config.{environments}.json"
 
         # Загружаем .env файл
-        load_dotenv(dotenv_path=Path(__file__).parent.parent / folder_environments / GlobalEnvironment)
+        env_path = Path(__file__).parent.parent / folder_environments / f".env.{environments}"
+        load_dotenv(dotenv_path=env_path)
 
         # Загружаем конфигурацию
         self._config_dict = self._load_config()
@@ -238,6 +254,29 @@ class Config:
             }
         }
     
+    @property
+    def api(self) -> dict:
+        return {
+            "enabled": os.getenv("API_ENABLED", False),
+            "host": os.getenv("API_HOST", "localhost"),
+            "port": int(os.getenv("API_PORT", 8080)),
+            "rabbitmq": {
+                "host": os.getenv("RABBITMQ_HOST", "localhost"),
+                "port": int(os.getenv("RABBITMQ_PORT", 5672)),
+                "username": os.getenv("RABBITMQ_USERNAME", "logger"),
+                "password": os.getenv("RABBITMQ_PASSWORD", "logger"),
+            },
+            "routers": {
+                "logs": os.getenv("API_ROUTERS_LOGS", False),
+                "config": os.getenv("API_ROUTERS_CONFIG", False),
+                "health": os.getenv("API_ROUTERS_HEALTH", False)
+            },
+            "auth": {
+                "enabled": os.getenv("API_AUTH_ENABLED", False),
+                "secret": os.getenv("API_AUTH_SECRET", "secret")
+            }
+        }
+    
     def _load_config(self) -> Dict[str, Any]:
         """ Функция для загрузки конфигурации из файла или переменного окружения
 
@@ -258,7 +297,7 @@ class Config:
                 return self._get_all_config()
 
         else:
-            env_config = self._get_all_config()
+            env_config = self.get_all_env_config()
             try:
                 validated_env_config = ServerConfig(**env_config)
                 self._save_config_to_file(validated_env_config.model_dump())
@@ -298,9 +337,14 @@ class Config:
         
         return raw_config
 
-TestConfig = Config("test")            # Конфигурация для тестов
-ProductionConfig = Config("prod")      # Конфигурация для продакшена
-ExampleConfig = Config("example")      # Конфигурация для примера
-
+    def get_all_env_config(self) -> Dict:
+        return {
+            "rabbitmq": self.rabbitmq,
+            "timescaledb": self.timescaledb,
+            "logger": self.logger,
+            "console": self.console,
+            "files": self.files,
+            "api": self.api
+        }
 
 ConfigManager = Manager(ServerConfig(**Config(GlobalEnvironment)._get_all_config())) # Менеджер конфигураций

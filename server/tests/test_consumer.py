@@ -4,7 +4,7 @@
 import asyncio
 import json
 from datetime import datetime, timezone
-from aio_pika import connect_robust, Message # type: ignore
+from aio_pika import connect_robust, Message
 
 from server.config.config import ConfigManager as cfg
 from server.config.schema import LibraryConfig
@@ -39,9 +39,9 @@ async def send_messages(cfg: LibraryConfig.Rabbit, interval_seconds: int):
 if __name__ == '__main__':
     try:
         print('start')
-        asyncio.run(send_messages(LibraryConfig.Rabbit(*cfg.config.rabbitmq), 10))  # Отправляем сообщения каждые 10 секунд
+        asyncio.run(send_messages(LibraryConfig.Rabbit(**cfg.config.rabbitmq.model_dump()), 10))
     except Exception as ex:
-        print(ex)
+        print(f"Error - {ex}")
     finally:
         exit(0)
         
